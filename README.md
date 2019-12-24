@@ -1,2 +1,2 @@
 # SensorReporter
-Some platformio library / framework to try something 
+A platformio library / framework to try something 

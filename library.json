@@ -1,0 +1,31 @@
+{
+  "name": "SensorReporter",
+  "keywords": "sensor",
+  "description": "Arduino library / framework report any sensor data",
+  "version": "0.1.0",
+  "frameworks": "arduino",
+  "platforms": "espressif32",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Claypuppet/SensorReporter.git"
+  },
+  "authors": [
+    {
+      "name": "Jelle Bouwhuis",
+      "email": "",
+      "url": "https://github.com/Claypuppet/SensorReporter",
+      "maintainer": true
+    }
+  ],
+  "dependencies": [],
+  "build": {
+    "srcFilter": [
+      "src/<*.cpp>"
+    ]
+  },
+  "export": {
+    "include": [
+      "include/*.hpp"
+    ]
+  }
+}
