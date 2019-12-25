@@ -11,17 +11,27 @@ enum ReporterTypes {
   e_my_serial_reporter
 };
 
+/**
+ * Some sensor that counts upwards every second
+ */
 class MySensor : public DataRetriever<int> {
  public:
-  MySensor() : DataRetriever<int>(e_my_sensor, 0) {
+  MySensor() : DataRetriever<int>(e_my_sensor, 0, 1000) {
   }
 
+  /**
+   * When measured, increment the data
+   * @return true
+   */
   bool measure() override {
     ++data;
     return true;
   }
 };
 
+/**
+ * A reporter that outputs the measurements in the form of a LED
+ */
 class LedReporter : public Reporter {
  public:
   LedReporter() : Reporter(e_my_led_reporter) {}
@@ -43,13 +53,16 @@ class LedReporter : public Reporter {
   }
 };
 
+
+/**
+ * A reporter that outputs the measurement through serial
+ */
 class SerialReporter : public Reporter {
  public:
   SerialReporter() : Reporter(e_my_serial_reporter) {}
 
   bool initialize() override {
-    pinMode(BUILTIN_LED, OUTPUT);
-    digitalWrite(BUILTIN_LED, LOW);
+    Serial.begin(115200);
     return true;
   }
 
@@ -67,8 +80,6 @@ LedReporter reporter_l;
 SerialReporter reporter_s;
 
 void setup() {
-  Serial.begin(115200);
-
   a.register_retriever(sensor);
   a.register_reporter(reporter_l);
   a.register_reporter(reporter_s);
