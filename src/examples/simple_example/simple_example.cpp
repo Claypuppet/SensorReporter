@@ -11,35 +11,20 @@ enum ReporterTypes {
   e_my_serial_reporter
 };
 
-
 class MySensor : public DataRetriever<int> {
  public:
-  MySensor() {
-    data = 0;
-  }
-
-  uint8_t get_retriever_id() const override {
-    return e_my_sensor;
+  MySensor() : DataRetriever<int>(e_my_sensor, 0) {
   }
 
   bool measure() override {
-    if (millis() - last_time > 1000){
-      last_time = millis();
-      ++data;
-      return true;
-    }
-    return false;
+    ++data;
+    return true;
   }
-
- private:
-  uint32_t last_time = 0;
 };
 
 class LedReporter : public Reporter {
  public:
-  uint32_t get_reporter_id() const override {
-    return e_my_led_reporter;
-  }
+  LedReporter() : Reporter(e_my_led_reporter) {}
 
   bool initialize() override {
     pinMode(BUILTIN_LED, OUTPUT);
@@ -51,8 +36,7 @@ class LedReporter : public Reporter {
     auto my_sensor_measurement = measurements.at(e_my_sensor);
     if(my_sensor_measurement.get<int>() % 2) {
       digitalWrite(BUILTIN_LED, HIGH);
-    }
-    else{
+    } else {
       digitalWrite(BUILTIN_LED, LOW);
     }
     return true;
@@ -61,9 +45,7 @@ class LedReporter : public Reporter {
 
 class SerialReporter : public Reporter {
  public:
-  uint32_t get_reporter_id() const override {
-    return e_my_serial_reporter;
-  }
+  SerialReporter() : Reporter(e_my_serial_reporter) {}
 
   bool initialize() override {
     pinMode(BUILTIN_LED, OUTPUT);

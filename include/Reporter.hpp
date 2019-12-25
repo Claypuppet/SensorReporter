@@ -14,10 +14,10 @@
  */
 class Reporter {
  public:
-  Reporter() = default;
+  explicit Reporter(uint8_t reporter_id);
   virtual ~Reporter() = default;
 
-  virtual uint32_t get_reporter_id() const = 0;
+  virtual uint8_t get_reporter_id() final;
 
   virtual bool initialize();
   virtual bool activate();
@@ -28,6 +28,9 @@ class Reporter {
   virtual bool pre_report();
   virtual bool report_measurements(const measurement_list_t& measurements);
   virtual bool post_report();
+
+ private:
+  uint8_t reporter_id;
 };
 
 #endif //SENSOR_REPORTER_REPORTER_HPP_

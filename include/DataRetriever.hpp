@@ -5,7 +5,7 @@
 #ifndef SENSOR_REPORTER_SENSOR_HPP_
 #define SENSOR_REPORTER_SENSOR_HPP_
 
-#include <stdint.h>
+#include <Arduino.h>
 
 /**
  * Base class for the data retriever, dont extend this, this is just to be able to keep a list of them
@@ -39,10 +39,21 @@ class BaseDataRetriever {
  * The DataRetriever should be extended by sensors and such, so they can be registered by the aggregator.
  * @tparam T: Type of the data object (can be int, string, or some struct type)
  */
-template <typename T>
+template<typename T>
 class DataRetriever : public BaseDataRetriever {
  public:
-  DataRetriever() = default;
+  /**
+   * Construct a data retriever
+   * @param measure_delay : it will wait x milliseconds after successful measurement before getting a new one
+   */
+  DataRetriever(uint8_t retriever_id, T initial_val, uint32_t measure_delay = 1000)
+      : BaseDataRetriever(),
+        retriever_id(retriever_id),
+        data(initial_val),
+        measure_delay(measure_delay),
+        last_measure_time(0) {
+  }
+
   virtual ~DataRetriever() = default;
 
   /**
@@ -56,12 +67,21 @@ class DataRetriever : public BaseDataRetriever {
    * be referenced to by the aggregator measurement data.
    * @return true if new data was read.
    */
-  virtual bool retrieve_data() final {
-    if(measure()){
+  bool retrieve_data() final {
+    if((millis() - last_measure_time > 1000 || last_measure_time == 0) && measure()) {
+      last_measure_time = millis();
       last_data = data;
       return true;
     }
     return false;
+  }
+
+  /**
+   * Get the retriever id
+   * @return retriever id
+   */
+  uint8_t get_retriever_id() const final {
+    return retriever_id;
   }
 
   /**
@@ -81,9 +101,12 @@ class DataRetriever : public BaseDataRetriever {
   }
 
  protected:
+  uint8_t retriever_id;
   T data;
 
  private:
+  uint32_t measure_delay;
+  uint32_t last_measure_time;
   T last_data;
 
 };
