@@ -46,7 +46,7 @@ class DataRetriever : public BaseDataRetriever {
    * Construct a data retriever
    * @param measure_delay : it will wait x milliseconds after successful measurement before getting a new one
    */
-  DataRetriever(uint8_t retriever_id, T initial_val = T(), uint32_t measure_delay = 1000)
+  DataRetriever(uint8_t retriever_id, T initial_val, uint32_t measure_delay = 1000)
       : BaseDataRetriever(),
         retriever_id(retriever_id),
         data(initial_val),
