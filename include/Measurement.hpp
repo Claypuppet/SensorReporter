@@ -20,7 +20,7 @@ struct Measurement {
    * @return the data
    */
   template<typename T>
-  T get() const{
+  const T& get() const {
     return *static_cast<T*>(data);
   }
 };

@@ -46,7 +46,7 @@ class DataRetriever : public BaseDataRetriever {
    * Construct a data retriever
    * @param measure_delay : it will wait x milliseconds after successful measurement before getting a new one
    */
-  DataRetriever(uint8_t retriever_id, T initial_val, uint32_t measure_delay = 1000)
+  DataRetriever(uint8_t retriever_id, T initial_val = T(), uint32_t measure_delay = 1000)
       : BaseDataRetriever(),
         retriever_id(retriever_id),
         data(initial_val),
@@ -70,7 +70,6 @@ class DataRetriever : public BaseDataRetriever {
   bool retrieve_data() final {
     if((millis() - last_measure_time > 1000 || last_measure_time == 0) && measure()) {
       last_measure_time = millis();
-      last_data = data;
       return true;
     }
     return false;
@@ -97,7 +96,7 @@ class DataRetriever : public BaseDataRetriever {
    * @return void pointer to the last data
    */
   virtual void* get_last() final {
-    return reinterpret_cast<void*>(&last_data);
+    return reinterpret_cast<void*>(&data);
   }
 
  protected:
@@ -107,7 +106,6 @@ class DataRetriever : public BaseDataRetriever {
  private:
   uint32_t measure_delay;
   uint32_t last_measure_time;
-  T last_data;
 
 };
 

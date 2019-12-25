@@ -11,12 +11,23 @@ enum ReporterTypes {
   e_my_serial_reporter
 };
 
+struct MySensorData {
+  int measurement;
+  char some_text[50];
+
+  void set_some_text(const char* text) {
+    if(strlen(text) < 50) {
+      strcpy(some_text, text);
+    }
+  }
+};
+
 /**
  * Some sensor that counts upwards every second
  */
-class MySensor : public DataRetriever<int> {
+class MySensor : public DataRetriever<MySensorData> {
  public:
-  MySensor() : DataRetriever<int>(e_my_sensor, 0, 1000) {
+  MySensor() : DataRetriever<MySensorData>(e_my_sensor, MySensorData{0, "hokey pokey"}, 1000) {
   }
 
   /**
@@ -24,7 +35,8 @@ class MySensor : public DataRetriever<int> {
    * @return true
    */
   bool measure() override {
-    ++data;
+    ++data.measurement;
+    data.set_some_text(data.measurement % 5 ? "hokey pokey" : "ee macarena");
     return true;
   }
 };
@@ -44,7 +56,7 @@ class LedReporter : public Reporter {
 
   bool report_measurements(const measurement_list_t& measurements) override {
     auto my_sensor_measurement = measurements.at(e_my_sensor);
-    if(my_sensor_measurement.get<int>() % 2) {
+    if(my_sensor_measurement.get<MySensorData>().measurement % 2) {
       digitalWrite(BUILTIN_LED, HIGH);
     } else {
       digitalWrite(BUILTIN_LED, LOW);
@@ -52,7 +64,6 @@ class LedReporter : public Reporter {
     return true;
   }
 };
-
 
 /**
  * A reporter that outputs the measurement through serial
@@ -67,9 +78,10 @@ class SerialReporter : public Reporter {
   }
 
   bool report_measurements(const measurement_list_t& measurements) override {
-    auto my_sensor_data = measurements.at(e_my_sensor).get<int>();
+    // Retrieve data as reference to avoid calling copy constructor
+    auto& my_sensor_data = measurements.at(e_my_sensor).get<MySensorData>();
 
-    Serial.printf("Reporting data from my sensor: %d!\n", my_sensor_data);
+    Serial.printf("Reporting data from my sensor: %d! (%s)\n", my_sensor_data.measurement, my_sensor_data.some_text);
     Serial.flush();
     return true;
   }
