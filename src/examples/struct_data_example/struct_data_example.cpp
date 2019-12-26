@@ -30,6 +30,7 @@ class MySensor : public DataRetriever<MySensorData> {
   MySensor() : DataRetriever<MySensorData>(e_my_sensor, MySensorData{0, "hokey pokey"}, 1000) {
   }
 
+ protected:
   /**
    * When measured, increment the data
    * @return true
@@ -48,20 +49,21 @@ class LedReporter : public Reporter {
  public:
   LedReporter() : Reporter(e_my_led_reporter) {}
 
+ protected:
   bool initialize() override {
     pinMode(BUILTIN_LED, OUTPUT);
     digitalWrite(BUILTIN_LED, LOW);
     return true;
   }
 
-  bool report_measurements(const measurement_list_t& measurements) override {
+  int8_t report_measurements(const measurement_map_t& measurements) override {
     auto my_sensor_measurement = measurements.at(e_my_sensor);
     if(my_sensor_measurement.get<MySensorData>().measurement % 2) {
       digitalWrite(BUILTIN_LED, HIGH);
     } else {
       digitalWrite(BUILTIN_LED, LOW);
     }
-    return true;
+    return ReporterStatus::e_ok;
   }
 };
 
@@ -72,18 +74,19 @@ class SerialReporter : public Reporter {
  public:
   SerialReporter() : Reporter(e_my_serial_reporter) {}
 
+ protected:
   bool initialize() override {
     Serial.begin(115200);
     return true;
   }
 
-  bool report_measurements(const measurement_list_t& measurements) override {
+  int8_t report_measurements(const measurement_map_t& measurements) override {
     // Retrieve data as reference to avoid calling copy constructor
     auto& my_sensor_data = measurements.at(e_my_sensor).get<MySensorData>();
 
     Serial.printf("Reporting data from my sensor: %d! (%s)\n", my_sensor_data.measurement, my_sensor_data.some_text);
     Serial.flush();
-    return true;
+    return ReporterStatus::e_ok;
   }
 };
 

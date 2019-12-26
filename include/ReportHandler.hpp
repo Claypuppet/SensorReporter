@@ -9,6 +9,11 @@
  * TODO
  */
 class ReportHandler {
+ public:
+  ReportHandler() = default;
+  virtual ~ReportHandler() = default;
+
+  virtual void handle_report(const Report& report) = 0;
 
 };
 

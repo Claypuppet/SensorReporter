@@ -5,7 +5,6 @@
 #include <map>
 #include <vector>
 #include "Report.hpp"
-#include "Measurement.hpp"
 #include "Reporter.hpp"
 #include "ReportHandler.hpp"
 #include "DataRetriever.hpp"
@@ -58,7 +57,8 @@ class Aggregator {
   std::map<uint8_t, Reporter*> reporters;
   std::vector<ReportHandler*> report_handlers;
 
-  measurement_list_t measurements;
+  measurement_map_t measurements;
+  reporter_status_map_t reporter_status;
 
   Report report;
 };

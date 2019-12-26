@@ -4,7 +4,7 @@
 
 #include <Aggregator.hpp>
 
-Aggregator::Aggregator() : report(measurements) {
+Aggregator::Aggregator() : report(measurements, reporter_status) {
 
 }
 
@@ -25,6 +25,7 @@ void Aggregator::register_reporter(Reporter& reporter) {
   if(reporters.find(reporter_id) == reporters.end()) {
     // Create new reporter
     reporters[reporter_id] = &reporter;
+    reporter_status[reporter_id] = ReporterStatus();
   } else {
     // Reporter with this id already exists...
     // TODO: add error logging
@@ -37,15 +38,15 @@ void Aggregator::register_report_handler(ReportHandler& handler) {
 
 void Aggregator::initialize_all() {
   for(auto r : reporters) {
-    r.second->initialize();
+    r.second->perform_initialize();
   }
 }
 
 void Aggregator::run() {
   bool any_new = false;
   // get measurements from the data retrievers
-  for(const auto r : retrievers) {
-    auto retriever = r.second;
+  for(const auto& r : retrievers) {
+    auto& retriever = r.second;
     if(retriever && retriever->retrieve_data()) {
       any_new = true;
       measurements[r.first].data = retriever->get_last();
@@ -57,15 +58,18 @@ void Aggregator::run() {
     return;
   }
   // Report the measurements
-  for(const auto r : reporters) {
+  for(const auto& r : reporters) {
     auto reporter = r.second;
     if(reporter) {
-      reporter->perform_report(report);
+      reporter->perform_report(measurements, reporter_status.at(reporter->get_reporter_id()));
     }
   }
-  // TODO: Handle the final report
-//  for(auto r : report_handlers) {
-//  }
+  // Handle the final report
+  for(const auto& report_handler : report_handlers) {
+    if(report_handler) {
+      report_handler->handle_report(report);
+    }
+  }
   // Mark all the measurements as not-fresh
   for(auto& measurement : measurements) {
     measurement.second.fresh = false;
