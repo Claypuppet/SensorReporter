@@ -34,7 +34,7 @@ class BaseDataReceiver : public Activatable {
    * Retrieve new data, this is called by the aggregator and handled in the DataReceiver class
    * @return true if new data has been recorded
    */
-  virtual bool retrieve_data() = 0;
+  virtual bool try_receive() = 0;
 };
 
 /**
@@ -69,7 +69,7 @@ class DataReceiver : public BaseDataReceiver {
    * be referenced to by the aggregator measurement data.
    * @return true if new data was read.
    */
-  bool retrieve_data() final {
+  bool try_receive() final {
     if(is_initialized()
         && is_active()
         && (millis() - last_check_time > 1000 || last_check_time == 0)

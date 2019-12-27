@@ -50,7 +50,7 @@ void Aggregator::run() {
   // get measurements from the data receivers
   for(const auto& r : receivers) {
     auto& retriever = r.second;
-    if(retriever && retriever->retrieve_data()) {
+    if(retriever && retriever->try_receive()) {
       any_new = true;
       measurements[r.first].data = retriever->get_last();
       measurements[r.first].fresh = true;
