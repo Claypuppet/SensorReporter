@@ -8,11 +8,18 @@
 #include <map>
 
 /**
- * A single measurement, keeps track if its fresh data and has method to cast the containing data
+ * The produced work of a worker
  */
-struct Measurement {
-  bool fresh = false;
-  bool active = false;
+struct WorkReport {
+  /// Enum can be replaced with custom implementation
+  typedef enum {
+    e_inactive = -1,
+    e_idle = 0,
+    e_fresh_data,
+    e_error
+  } StatusCode;
+
+  uint8_t state = e_inactive;
   void* data = nullptr;
 
   /**
@@ -26,39 +33,37 @@ struct Measurement {
   }
 };
 
-typedef std::map<uint8_t, Measurement> measurement_map_t;
+typedef std::map<uint8_t, WorkReport> worker_report_map_t;
 
 /**
- * Status of a single data handler
+ * The results of the handler handling work reports
  */
-struct ReporterStatus {
+struct HandlerReport {
+  /// Enum can be replaced with custom implementation
   typedef enum {
     e_inactive = -1,
     e_ok = 0,
     e_error
   } StatusCode;
 
-  int8_t pre = StatusCode::e_inactive;
-  int8_t report = StatusCode::e_inactive;
-  int8_t post = StatusCode::e_inactive;
+  int8_t state = StatusCode::e_inactive;
 };
 
-typedef std::map<uint8_t, ReporterStatus> handler_status_map_t;
+typedef std::map<uint8_t, HandlerReport> handler_reports_map_t;
 
 /**
- * The report object keeps track of the current reporting being done. It provides the measurements to the data handler,
- * which will then set the data handler status and results in this object. The report handler will get the full object to
- * handle the rest
+ * The report object keeps track of the activity of the workers and handlers. It provides the work reports to the
+ * handlers, which will then fill in the handler report. The supervisor will get the full report to handle the rest.
  */
 class Report {
  public:
-  Report(measurement_map_t& measurements, handler_status_map_t& handlers)
-      : measurements(measurements), handlers(handlers) {}
+  Report(worker_report_map_t& measurements, handler_reports_map_t& handlers)
+      : worker_reports(measurements), handler_reports(handlers) {}
 
   virtual ~Report() = default;
 
-  const measurement_map_t& measurements;
-  const handler_status_map_t& handlers;
+  const worker_report_map_t& worker_reports;
+  const handler_reports_map_t& handler_reports;
 };
 
 #endif //SENSOR_REPORTER_INCLUDE_REPORT_HPP_

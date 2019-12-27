@@ -14,27 +14,27 @@ enum ReporterTypes {
 /**
  * Some sensor that counts upwards every second
  */
-class MySensor : public DataReceiver<int> {
+class MySensor : public Worker<int> {
  public:
-  MySensor() : DataReceiver<int>(e_my_sensor, 0, true, 1000) {
+  MySensor() : Worker<int>(e_my_sensor, 0, true, 1000) {
   }
 
   /**
    * When measured, increment the data
    * @return true
    */
-  bool receive_data() override {
+  bool produce_data() override {
     ++data;
     return true;
   }
 };
 
 /**
- * A data handler that outputs the measurements in the form of a LED
+ * A data handler that outputs the worker_reports in the form of a LED
  */
-class LedReporter : public DataObserver {
+class LedReporter : public Handler {
  public:
-  LedReporter() : DataObserver(e_my_led_handler) {}
+  LedReporter() : Handler(e_my_led_handler) {}
 
   bool initialize() override {
     pinMode(BUILTIN_LED, OUTPUT);
@@ -42,35 +42,39 @@ class LedReporter : public DataObserver {
     return true;
   }
 
-  int8_t report_measurements(const measurement_map_t& measurements) override {
+  int8_t handle_produced_work(const worker_report_map_t& measurements) override {
     auto my_sensor_measurement = measurements.at(e_my_sensor);
-    if(my_sensor_measurement.get<int>() % 2) {
-      digitalWrite(BUILTIN_LED, HIGH);
-    } else {
-      digitalWrite(BUILTIN_LED, LOW);
+    if(my_sensor_measurement.state == WorkReport::StatusCode::e_fresh_data) {
+      if(my_sensor_measurement.get<int>() % 2) {
+        digitalWrite(BUILTIN_LED, HIGH);
+      } else {
+        digitalWrite(BUILTIN_LED, LOW);
+      }
     }
-    return ReporterStatus::e_ok;
+    return HandlerReport::e_ok;
   }
 };
 
 /**
  * A data handler that outputs the measurement through serial
  */
-class SerialReporter : public DataObserver {
+class SerialReporter : public Handler {
  public:
-  SerialReporter() : DataObserver(e_my_serial_handler) {}
+  SerialReporter() : Handler(e_my_serial_handler) {}
 
   bool initialize() override {
     Serial.begin(115200);
     return true;
   }
 
-  int8_t report_measurements(const measurement_map_t& measurements) override {
-    auto my_sensor_data = measurements.at(e_my_sensor).get<int>();
-
-    Serial.printf("Reporting data from my sensor: %d!\n", my_sensor_data);
-    Serial.flush();
-    return ReporterStatus::e_ok;
+  int8_t handle_produced_work(const worker_report_map_t& measurements) override {
+    auto my_sensor_measurement = measurements.at(e_my_sensor);
+    if(my_sensor_measurement.state == WorkReport::StatusCode::e_fresh_data) {
+      auto value = my_sensor_measurement.get<int>();
+      Serial.printf("Reporting data from my sensor: %d!\n", value);
+      Serial.flush();
+    }
+    return HandlerReport::e_ok;
   }
 };
 
@@ -80,9 +84,9 @@ LedReporter handler_l;
 SerialReporter handler_s;
 
 void setup() {
-  a.register_receiver(sensor);
-  a.register_data_observer(handler_l);
-  a.register_data_observer(handler_s);
+  a.register_worker(sensor);
+  a.register_handler(handler_l);
+  a.register_handler(handler_s);
 
   a.initialize_all();
 }

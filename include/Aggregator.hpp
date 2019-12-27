@@ -2,22 +2,21 @@
 // Created by Jelle Bouwhuis on 12/24/19.
 //
 
-#include <map>
 #include <vector>
 #include "Report.hpp"
-#include "DataObserver.hpp"
-#include "ReportHandler.hpp"
-#include "DataReceiver.hpp"
+#include "Handler.hpp"
+#include "Supervisor.hpp"
+#include "Worker.hpp"
 
 #ifndef SENSOR_REPORTER_AGGREGATOR_HPP_
 #define SENSOR_REPORTER_AGGREGATOR_HPP_
 
 /**
- * Some class that collects the data from the receivers and passes it to the data observers.
+ * Some class that collects the data from the workers and passes it to the data handlers.
  * Can register
- * - receivers (that retrieve data/measurements)
- * - data observers (report the measurements)
- * - report observers (that handle the report results)
+ * - workers (that retrieve data/worker_reports)
+ * - handlers (handle the work that the workers produced)
+ * - supervisors (that handle the full report)
  */
 class Aggregator {
  public:
@@ -25,40 +24,45 @@ class Aggregator {
   virtual ~Aggregator() = default;
 
   /**
-   * Add a new receiver / sensor to the aggregator
-   * @param receiver
+   * Add a new worker to the aggregator
+   * @param worker
    */
-  void register_receiver(BaseDataReceiver& receiver);
+  void register_worker(BaseWorker& worker);
 
   /**
    * Add a new data handler to the aggregator
    * @param data handler
    */
-  void register_data_observer(DataObserver& handler);
+  void register_handler(Handler& handler);
 
   /**
-   * Add a new report handler to the aggregator
-   * @param handler
+   * Add a new report supervisor to the aggregator
+   * @param supervisor
    */
-  void register_report_handler(ReportHandler& handler);
+  void register_supervisor(Supervisor& supervisor);
 
   /**
-   * initialize all data observers
+   * initialize all data handlers
    */
   void initialize_all();
 
   /**
    * Run the aggregator
+   * Three steps:
+   * 1. workers produce work
+   *   - If no fresh work is produced, the next steps are skipped
+   * 2. handlers handle produced work
+   * 3. supervisor oversees final report
    */
   void run();
 
  private:
-  std::map<uint8_t, BaseDataReceiver*> receivers;
-  std::map<uint8_t, DataObserver*> observers;
-  std::vector<ReportHandler*> report_handlers;
+  std::map<uint8_t, BaseWorker*> workers;
+  std::map<uint8_t, Handler*> handlers;
+  std::vector<Supervisor*> supervisors;
 
-  measurement_map_t measurements;
-  handler_status_map_t handler_status;
+  worker_report_map_t measurements;
+  handler_reports_map_t handler_status;
 
   Report report;
 };
