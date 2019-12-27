@@ -4,30 +4,30 @@
 
 #include <Aggregator.hpp>
 
-Aggregator::Aggregator() : report(measurements, reporter_status) {
+Aggregator::Aggregator() : report(measurements, handler_status) {
 
 }
 
-void Aggregator::register_retriever(BaseDataRetriever& retriever) {
-  auto retriever_id = retriever.get_retriever_id();
-  if(retrievers.find(retriever_id) == retrievers.end()) {
-    // Create new retriever and measurement
-    retrievers[retriever_id] = &retriever;
-    measurements[retriever_id] = Measurement();
+void Aggregator::register_receiver(BaseDataReceiver& receiver) {
+  auto receiver_id = receiver.get_receiver_id();
+  if(receivers.find(receiver_id) == receivers.end()) {
+    // Create new receiver and measurement
+    receivers[receiver_id] = &receiver;
+    measurements[receiver_id] = Measurement();
   } else {
-    // Retriever with this id already exists...
+    // Receiver with this id already exists...
     // TODO: add error logging
   }
 }
 
-void Aggregator::register_reporter(Reporter& reporter) {
-  auto reporter_id = reporter.get_reporter_id();
-  if(reporters.find(reporter_id) == reporters.end()) {
-    // Create new reporter
-    reporters[reporter_id] = &reporter;
-    reporter_status[reporter_id] = ReporterStatus();
+void Aggregator::register_data_observer(DataObserver& handler) {
+  auto handler_id = handler.get_observer_id();
+  if(observers.find(handler_id) == observers.end()) {
+    // Create new handler
+    observers[handler_id] = &handler;
+    handler_status[handler_id] = ReporterStatus();
   } else {
-    // Reporter with this id already exists...
+    // Observer with this id already exists...
     // TODO: add error logging
   }
 }
@@ -37,15 +37,18 @@ void Aggregator::register_report_handler(ReportHandler& handler) {
 }
 
 void Aggregator::initialize_all() {
-  for(auto r : reporters) {
+  for(const auto& o : observers) {
+    o.second->perform_initialize();
+  }
+  for(const auto& r : receivers) {
     r.second->perform_initialize();
   }
 }
 
 void Aggregator::run() {
   bool any_new = false;
-  // get measurements from the data retrievers
-  for(const auto& r : retrievers) {
+  // get measurements from the data receivers
+  for(const auto& r : receivers) {
     auto& retriever = r.second;
     if(retriever && retriever->retrieve_data()) {
       any_new = true;
@@ -58,10 +61,10 @@ void Aggregator::run() {
     return;
   }
   // Report the measurements
-  for(const auto& r : reporters) {
-    auto reporter = r.second;
-    if(reporter) {
-      reporter->perform_report(measurements, reporter_status.at(reporter->get_reporter_id()));
+  for(const auto& r : observers) {
+    auto handler = r.second;
+    if(handler && handler->is_active()) {
+      handler->perform_report(measurements, handler_status.at(handler->get_observer_id()));
     }
   }
   // Handle the final report

@@ -7,34 +7,34 @@ enum SensorTypes {
 };
 
 enum ReporterTypes {
-  e_my_led_reporter = 0,
-  e_my_serial_reporter
+  e_my_led_handler = 0,
+  e_my_serial_handler
 };
 
 /**
  * Some sensor that counts upwards every second
  */
-class MySensor : public DataRetriever<int> {
+class MySensor : public DataReceiver<int> {
  public:
-  MySensor() : DataRetriever<int>(e_my_sensor, 0, 1000) {
+  MySensor() : DataReceiver<int>(e_my_sensor, 0, true, 1000) {
   }
 
   /**
    * When measured, increment the data
    * @return true
    */
-  bool measure() override {
+  bool receive_data() override {
     ++data;
     return true;
   }
 };
 
 /**
- * A reporter that outputs the measurements in the form of a LED
+ * A data handler that outputs the measurements in the form of a LED
  */
-class LedReporter : public Reporter {
+class LedReporter : public DataObserver {
  public:
-  LedReporter() : Reporter(e_my_led_reporter) {}
+  LedReporter() : DataObserver(e_my_led_handler) {}
 
   bool initialize() override {
     pinMode(BUILTIN_LED, OUTPUT);
@@ -54,11 +54,11 @@ class LedReporter : public Reporter {
 };
 
 /**
- * A reporter that outputs the measurement through serial
+ * A data handler that outputs the measurement through serial
  */
-class SerialReporter : public Reporter {
+class SerialReporter : public DataObserver {
  public:
-  SerialReporter() : Reporter(e_my_serial_reporter) {}
+  SerialReporter() : DataObserver(e_my_serial_handler) {}
 
   bool initialize() override {
     Serial.begin(115200);
@@ -76,13 +76,13 @@ class SerialReporter : public Reporter {
 
 Aggregator a;
 MySensor sensor;
-LedReporter reporter_l;
-SerialReporter reporter_s;
+LedReporter handler_l;
+SerialReporter handler_s;
 
 void setup() {
-  a.register_retriever(sensor);
-  a.register_reporter(reporter_l);
-  a.register_reporter(reporter_s);
+  a.register_receiver(sensor);
+  a.register_data_observer(handler_l);
+  a.register_data_observer(handler_s);
 
   a.initialize_all();
 }

@@ -6,21 +6,23 @@
 #define SENSOR_REPORTER_SENSOR_HPP_
 
 #include <Arduino.h>
+#include "Activatable.hpp"
 
 /**
- * Base class for the data retriever, dont extend this, this is just to be able to keep a list of them
- * Each retriever needs an unique ID, best defined with an enum or something
+ * Base class for the data receiver
+ * Each receiver needs an unique ID, best defined with an enum or similar
+ * To use this, extend the DataReceiver class
  */
-class BaseDataRetriever {
+class BaseDataReceiver : public Activatable {
  public:
-  BaseDataRetriever() = default;
-  virtual ~BaseDataRetriever() = default;
+  explicit BaseDataReceiver(bool active) : Activatable(active) {};
+  virtual ~BaseDataReceiver() = default;
 
   /**
    * Get the retriever id
    * @return retriever id
    */
-  virtual uint8_t get_retriever_id() const = 0;
+  virtual uint8_t get_receiver_id() const = 0;
 
   /**
    * Get pointer to last data measured
@@ -29,38 +31,38 @@ class BaseDataRetriever {
   virtual void* get_last() = 0;
 
   /**
-   * Retrieve new data, this is called by the aggregator and handled in the DataRetriever class
+   * Retrieve new data, this is called by the aggregator and handled in the DataReceiver class
    * @return true if new data has been recorded
    */
   virtual bool retrieve_data() = 0;
 };
 
 /**
- * The DataRetriever should be extended by sensors and such, so they can be registered by the aggregator.
+ * The DataReceiver should be extended by sensors and such, so they can be registered by the aggregator.
  * @tparam T: Type of the data object (can be int, string, or some struct type)
  */
 template<typename T>
-class DataRetriever : public BaseDataRetriever {
+class DataReceiver : public BaseDataReceiver {
  public:
   /**
    * Construct a data retriever
-   * @param measure_delay : it will wait x milliseconds after successful measurement before getting a new one
+   * @param check_delay : it will wait x milliseconds after successful measurement before getting a new one
    */
-  DataRetriever(uint8_t retriever_id, T initial_val, uint32_t measure_delay = 1000)
-      : BaseDataRetriever(),
-        retriever_id(retriever_id),
+  DataReceiver(uint8_t receiver_id, T initial_val, bool active = true, uint32_t check_delay = 1000)
+      : BaseDataReceiver(active),
+        receiver_id(receiver_id),
         data(initial_val),
-        measure_delay(measure_delay),
-        last_measure_time(0) {
+        check_delay(check_delay),
+        last_check_time(0) {
   }
 
-  virtual ~DataRetriever() = default;
+  virtual ~DataReceiver() = default;
 
   /**
    * The main function of the class, will do the measurement and store it in `data`
    * @return true if the measurement was success (new data available)
    */
-  virtual bool measure() = 0;
+  virtual bool receive_data() = 0;
 
   /**
    * Called by the aggregator to retrieve new data. If new data is read, it will be stored in `last_data` to
@@ -68,8 +70,12 @@ class DataRetriever : public BaseDataRetriever {
    * @return true if new data was read.
    */
   bool retrieve_data() final {
-    if((millis() - last_measure_time > 1000 || last_measure_time == 0) && measure()) {
-      last_measure_time = millis();
+    if(is_initialized()
+        && is_active()
+        && (millis() - last_check_time > 1000 || last_check_time == 0)
+        && receive_data()) {
+
+      last_check_time = millis();
       return true;
     }
     return false;
@@ -79,8 +85,8 @@ class DataRetriever : public BaseDataRetriever {
    * Get the retriever id
    * @return retriever id
    */
-  uint8_t get_retriever_id() const final {
-    return retriever_id;
+  uint8_t get_receiver_id() const final {
+    return receiver_id;
   }
 
   /**
@@ -95,18 +101,17 @@ class DataRetriever : public BaseDataRetriever {
    * Get a pointer to the last data object of the retriever
    * @return void pointer to the last data
    */
-  virtual void* get_last() final {
+  void* get_last() final {
     return reinterpret_cast<void*>(&data);
   }
 
  protected:
-  uint8_t retriever_id;
+  uint8_t receiver_id;
   T data;
 
  private:
-  uint32_t measure_delay;
-  uint32_t last_measure_time;
-
+  uint32_t check_delay;
+  uint32_t last_check_time;
 };
 
 #endif //SENSOR_REPORTER_SENSOR_HPP_

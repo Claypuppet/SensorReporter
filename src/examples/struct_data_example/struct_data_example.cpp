@@ -7,8 +7,8 @@ enum SensorTypes {
 };
 
 enum ReporterTypes {
-  e_my_led_reporter = 0,
-  e_my_serial_reporter
+  e_my_led_handler = 0,
+  e_my_serial_handler
 };
 
 struct MySensorData {
@@ -25,9 +25,9 @@ struct MySensorData {
 /**
  * Some sensor that counts upwards every second
  */
-class MySensor : public DataRetriever<MySensorData> {
+class MySensor : public DataReceiver<MySensorData> {
  public:
-  MySensor() : DataRetriever<MySensorData>(e_my_sensor, MySensorData{0, "hokey pokey"}, 1000) {
+  MySensor() : DataReceiver<MySensorData>(e_my_sensor, MySensorData{0, "hokey pokey"}, 1000) {
   }
 
  protected:
@@ -35,7 +35,7 @@ class MySensor : public DataRetriever<MySensorData> {
    * When measured, increment the data
    * @return true
    */
-  bool measure() override {
+  bool receive_data() override {
     ++data.measurement;
     data.set_some_text(data.measurement % 5 ? "hokey pokey" : "ee macarena");
     return true;
@@ -43,11 +43,11 @@ class MySensor : public DataRetriever<MySensorData> {
 };
 
 /**
- * A reporter that outputs the measurements in the form of a LED
+ * A data handler that outputs the measurements in the form of a LED
  */
-class LedReporter : public Reporter {
+class LedReporter : public DataObserver {
  public:
-  LedReporter() : Reporter(e_my_led_reporter) {}
+  LedReporter() : DataObserver(e_my_led_handler) {}
 
  protected:
   bool initialize() override {
@@ -58,21 +58,24 @@ class LedReporter : public Reporter {
 
   int8_t report_measurements(const measurement_map_t& measurements) override {
     auto my_sensor_measurement = measurements.at(e_my_sensor);
-    if(my_sensor_measurement.get<MySensorData>().measurement % 2) {
-      digitalWrite(BUILTIN_LED, HIGH);
-    } else {
-      digitalWrite(BUILTIN_LED, LOW);
+    if(my_sensor_measurement.fresh) {
+      if(my_sensor_measurement.get<MySensorData>().measurement % 2) {
+        digitalWrite(BUILTIN_LED, HIGH);
+      } else {
+        digitalWrite(BUILTIN_LED, LOW);
+      }
+      return ReporterStatus::e_ok;
     }
-    return ReporterStatus::e_ok;
+    return ReporterStatus::e_inactive;
   }
 };
 
 /**
- * A reporter that outputs the measurement through serial
+ * A data handler that outputs the measurement through serial
  */
-class SerialReporter : public Reporter {
+class SerialReporter : public DataObserver {
  public:
-  SerialReporter() : Reporter(e_my_serial_reporter) {}
+  SerialReporter() : DataObserver(e_my_serial_handler) {}
 
  protected:
   bool initialize() override {
@@ -82,23 +85,26 @@ class SerialReporter : public Reporter {
 
   int8_t report_measurements(const measurement_map_t& measurements) override {
     // Retrieve data as reference to avoid calling copy constructor
-    auto& my_sensor_data = measurements.at(e_my_sensor).get<MySensorData>();
-
-    Serial.printf("Reporting data from my sensor: %d! (%s)\n", my_sensor_data.measurement, my_sensor_data.some_text);
-    Serial.flush();
-    return ReporterStatus::e_ok;
+    auto my_sensor_measurement = measurements.at(e_my_sensor);
+    if(my_sensor_measurement.fresh) {
+      const auto& data = my_sensor_measurement.get<MySensorData>();
+      Serial.printf("Reporting data from my sensor: %d! (%s)\n", data.measurement, data.some_text);
+      Serial.flush();
+      return ReporterStatus::e_ok;
+    }
+    return ReporterStatus::e_inactive;
   }
 };
 
 Aggregator a;
 MySensor sensor;
-LedReporter reporter_l;
-SerialReporter reporter_s;
+LedReporter handler_l;
+SerialReporter handler_s;
 
 void setup() {
-  a.register_retriever(sensor);
-  a.register_reporter(reporter_l);
-  a.register_reporter(reporter_s);
+  a.register_receiver(sensor);
+  a.register_data_observer(handler_l);
+  a.register_data_observer(handler_s);
 
   a.initialize_all();
 }

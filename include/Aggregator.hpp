@@ -5,19 +5,19 @@
 #include <map>
 #include <vector>
 #include "Report.hpp"
-#include "Reporter.hpp"
+#include "DataObserver.hpp"
 #include "ReportHandler.hpp"
-#include "DataRetriever.hpp"
+#include "DataReceiver.hpp"
 
 #ifndef SENSOR_REPORTER_AGGREGATOR_HPP_
 #define SENSOR_REPORTER_AGGREGATOR_HPP_
 
 /**
- * Some class that collects the data from the retrievers and passes it to the reporters.
+ * Some class that collects the data from the receivers and passes it to the data observers.
  * Can register
- * - retrievers (that retrieve data)
- * - reporters (that report data)
- * - handlers (that handle the report results)
+ * - receivers (that retrieve data/measurements)
+ * - data observers (report the measurements)
+ * - report observers (that handle the report results)
  */
 class Aggregator {
  public:
@@ -25,16 +25,16 @@ class Aggregator {
   virtual ~Aggregator() = default;
 
   /**
-   * Add a new retriever / sensor to the aggregator
-   * @param retriever
+   * Add a new receiver / sensor to the aggregator
+   * @param receiver
    */
-  void register_retriever(BaseDataRetriever& retriever);
+  void register_receiver(BaseDataReceiver& receiver);
 
   /**
-   * Add a new reporter to the aggregator
-   * @param reporter
+   * Add a new data handler to the aggregator
+   * @param data handler
    */
-  void register_reporter(Reporter& reporter);
+  void register_data_observer(DataObserver& handler);
 
   /**
    * Add a new report handler to the aggregator
@@ -43,7 +43,7 @@ class Aggregator {
   void register_report_handler(ReportHandler& handler);
 
   /**
-   * initialize all reporters
+   * initialize all data observers
    */
   void initialize_all();
 
@@ -53,12 +53,12 @@ class Aggregator {
   void run();
 
  private:
-  std::map<uint8_t, BaseDataRetriever*> retrievers;
-  std::map<uint8_t, Reporter*> reporters;
+  std::map<uint8_t, BaseDataReceiver*> receivers;
+  std::map<uint8_t, DataObserver*> observers;
   std::vector<ReportHandler*> report_handlers;
 
   measurement_map_t measurements;
-  reporter_status_map_t reporter_status;
+  handler_status_map_t handler_status;
 
   Report report;
 };
