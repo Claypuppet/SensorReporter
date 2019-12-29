@@ -13,7 +13,7 @@
 struct _Status {
   typedef enum State{
     e_state_inactive = 0,
-    e_state_activating,
+    e_state_activating_failed,
     e_state_active
   } State;
 

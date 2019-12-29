@@ -6,7 +6,7 @@
 
 void Activatable::set_active(bool _activate, _Status& status) {
   if(status.active_state == _Status::e_state_inactive && _activate) {
-    status.active_state = activate() ? _Status::e_state_active : _Status::e_state_activating;
+    status.active_state = activate() ? _Status::e_state_active : _Status::e_state_activating_failed;
   } else if(status.active_state != _Status::e_state_inactive && !_activate) {
     deactivate();
     status.active_state = _Status::e_state_inactive;

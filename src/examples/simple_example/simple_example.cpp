@@ -96,17 +96,17 @@ class SerialReporter : public Handler {
   }
 };
 
-Aggregator a;
+Aggregator aggregator;
 MySensor sensor;
 LedReporter handler_l;
 SerialReporter handler_s;
 
 void setup() {
-  a.register_worker(sensor);
-  a.register_handler(handler_l);
-  a.register_handler(handler_s);
+  aggregator.register_worker(sensor);
+  aggregator.register_handler(handler_l);
+  aggregator.register_handler(handler_s);
 }
 
 void loop() {
-  a.run();
+  aggregator.run();
 }
