@@ -72,6 +72,15 @@ class Worker : public BaseWorker {
    * @return true if new data was produced.
    */
   bool work(WorkerStatus& status) final {
+    if(status.active_state == _Status::e_state_activating_failed) {
+      // Still activating, will try to activate again
+      if (activate(true)) {
+        status.active_state = HandlerStatus::e_state_active;
+      }
+      else {
+        return false;
+      }
+    }
     if(status.active()) {
       if((millis() - last_break > break_duration || last_break == 0)) {
         status.status = produce_data();

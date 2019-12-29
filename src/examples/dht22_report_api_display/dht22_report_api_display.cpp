@@ -30,7 +30,7 @@ class MyDHTSensor : public DHT, public Worker<DHTData> {
   MyDHTSensor() : DHT(), Worker<DHTData>(e_my_sensor, DHTData{0, 0}, 2000) {}
 
  protected:
-  bool activate() override {
+  bool activate(bool retry) override {
     setup(DHT_PIN, DHT_MODEL_t::DHT22);
     return true;
   }

@@ -14,7 +14,7 @@ void Handler::try_handle_work(HandlerStatus& status, worker_status_t& work_repor
   }
   if(status.active_state == _Status::e_state_activating_failed) {
     // Still activating, will try to activate again
-    if (activate()) {
+    if (activate(true)) {
       status.active_state = HandlerStatus::e_state_active;
     }
     else {

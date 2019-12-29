@@ -23,7 +23,7 @@ class Activatable {
    * Example, use of wifi or bluetooth connection
    * @return true if activate was success. if false, object will not be activated (and wont be used)
    */
-  virtual bool activate();
+  virtual bool activate(bool retry);
 
   /**
    * Perform an deactivate function, will be called when set_active(false)

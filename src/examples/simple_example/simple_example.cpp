@@ -50,7 +50,7 @@ class LedReporter : public Handler {
   LedReporter() : Handler(e_my_led_handler) {}
 
  protected:
-  bool activate() override {
+  bool activate(bool retry) override {
     pinMode(BUILTIN_LED, OUTPUT);
     digitalWrite(BUILTIN_LED, LOW);
     return true;
@@ -78,7 +78,7 @@ class SerialReporter : public Handler {
   SerialReporter() : Handler(e_my_serial_handler) {}
 
  protected:
-  bool activate() override {
+  bool activate(bool retry) override {
     Serial.begin(115200);
     return true;
   }
