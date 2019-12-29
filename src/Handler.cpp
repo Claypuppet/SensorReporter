@@ -4,15 +4,19 @@
 
 #include "Handler.hpp"
 
-Handler::Handler(uint8_t handler_id, bool active) : Activatable(active), handler_id(handler_id) {
+Handler::Handler(uint8_t handler_id) : Activatable(), handler_id(handler_id) {
 }
 
-void Handler::try_handle_work(worker_report_map_t& work_reports, HandlerReport& status) {
-  if(!is_active() || !is_initialized()) {
-    status.state = HandlerReport::e_inactive;
-    return;
+void Handler::try_handle_work(HandlerStatus& status, worker_status_t& work_reports) {
+  if(status.active_state == _Status::e_state_activating) {
+    if (activate()) {
+      status.active_state = HandlerStatus::e_state_active;
+    }
+    else {
+      return;
+    }
   }
-  status.state = handle_produced_work(work_reports);
+  status.status = handle_produced_work(work_reports);
 }
 
 uint8_t Handler::get_handler_id() {

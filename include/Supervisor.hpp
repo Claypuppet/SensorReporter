@@ -14,6 +14,8 @@ class Supervisor {
   Supervisor() = default;
   virtual ~Supervisor() = default;
 
+  virtual bool activate() { return true; }
+
   /**
    * handle the full report
    * @param report

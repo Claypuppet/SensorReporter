@@ -11,21 +11,34 @@ enum ReporterTypes {
   e_my_serial_handler
 };
 
+struct MySensorData {
+  int measurement;
+  char some_text[50];
+
+  void set_some_text(const char* text) {
+    if(strlen(text) < 50) {
+      strcpy(some_text, text);
+    }
+  }
+};
+
 /**
  * Some sensor that counts upwards every second
  */
-class MySensor : public Worker<int> {
+class MySensor : public Worker<MySensorData> {
  public:
-  MySensor() : Worker<int>(e_my_sensor, 0, true, 1000) {
+  MySensor() : Worker<MySensorData>(e_my_sensor, MySensorData{0, "hokey pokey"}, 1000) {
   }
 
+ protected:
   /**
    * When measured, increment the data
    * @return true
    */
-  bool produce_data() override {
-    ++data;
-    return true;
+  int8_t produce_data() override {
+    ++data.measurement;
+    data.set_some_text(data.measurement % 5 ? "hokey pokey" : "ee macarena");
+    return WorkerStatus::e_worker_data_read;
   }
 };
 
@@ -36,22 +49,24 @@ class LedReporter : public Handler {
  public:
   LedReporter() : Handler(e_my_led_handler) {}
 
-  bool initialize() override {
+ protected:
+  bool activate() override {
     pinMode(BUILTIN_LED, OUTPUT);
     digitalWrite(BUILTIN_LED, LOW);
     return true;
   }
 
-  int8_t handle_produced_work(const worker_report_map_t& measurements) override {
-    auto my_sensor_measurement = measurements.at(e_my_sensor);
-    if(my_sensor_measurement.state == WorkReport::StatusCode::e_fresh_data) {
-      if(my_sensor_measurement.get<int>() % 2) {
+  int8_t handle_produced_work(const worker_status_t& worker_stats) override {
+    auto my_sensor_measurement = worker_stats.at(e_my_sensor);
+    if(my_sensor_measurement.status == WorkerStatus::e_worker_data_read) {
+      if(my_sensor_measurement.get<MySensorData>().measurement % 2) {
         digitalWrite(BUILTIN_LED, HIGH);
       } else {
         digitalWrite(BUILTIN_LED, LOW);
       }
+      return HandlerStatus::e_handler_data_handled;
     }
-    return HandlerReport::e_ok;
+    return HandlerStatus::e_handler_idle;
   }
 };
 
@@ -62,19 +77,22 @@ class SerialReporter : public Handler {
  public:
   SerialReporter() : Handler(e_my_serial_handler) {}
 
-  bool initialize() override {
+ protected:
+  bool activate() override {
     Serial.begin(115200);
     return true;
   }
 
-  int8_t handle_produced_work(const worker_report_map_t& measurements) override {
-    auto my_sensor_measurement = measurements.at(e_my_sensor);
-    if(my_sensor_measurement.state == WorkReport::StatusCode::e_fresh_data) {
-      auto value = my_sensor_measurement.get<int>();
-      Serial.printf("Reporting data from my sensor: %d!\n", value);
+  int8_t handle_produced_work(const worker_status_t& worker_stats) override {
+    auto my_sensor_measurement = worker_stats.at(e_my_sensor);
+    if(my_sensor_measurement.status == WorkerStatus::e_worker_data_read) {
+      // Retrieve data as reference to avoid calling copy constructor
+      const auto& data = my_sensor_measurement.get<MySensorData>();
+      Serial.printf("Reporting data from my sensor: %d! (%s)\n", data.measurement, data.some_text);
       Serial.flush();
+      return HandlerStatus::e_handler_data_handled;
     }
-    return HandlerReport::e_ok;
+    return HandlerStatus::e_handler_idle;
   }
 };
 
@@ -87,8 +105,6 @@ void setup() {
   a.register_worker(sensor);
   a.register_handler(handler_l);
   a.register_handler(handler_s);
-
-  a.initialize_all();
 }
 
 void loop() {

@@ -16,9 +16,8 @@ class Handler : public Activatable {
   /**
    * Construct a handler
    * @param handler_id: unique id of the handler
-   * @param active: start activated (the activate will be called on initialize if enabled)
    */
-  explicit Handler(uint8_t handler_id, bool active = true);
+  explicit Handler(uint8_t handler_id);
   virtual ~Handler() = default;
 
   /**
@@ -32,15 +31,15 @@ class Handler : public Activatable {
    * @param work_reports: worker reports to handle
    * @param status: reference to the status to fill of this data handler
    */
-  virtual void try_handle_work(worker_report_map_t& work_reports, HandlerReport& status) final;
+  virtual void try_handle_work(HandlerStatus& status, worker_status_t& work_reports) final;
 
  protected:
   /**
    * Handle the data produced by workers
    * @param worker_reports: All the data from the workers
-   * @return status code (HandlerReport::StatusCode or any custom)
+   * @return status code (HandlerStatus::StatusCode or any custom)
    */
-  virtual int8_t handle_produced_work(const worker_report_map_t& worker_reports) = 0;
+  virtual int8_t handle_produced_work(const worker_status_t& worker_reports) = 0;
 
 
  private:
