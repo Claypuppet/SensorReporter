@@ -6,6 +6,7 @@
 #define SENSOR_REPORTER_SENSOR_HPP_
 
 #include <Arduino.h>
+#include <map>
 #include "Activatable.hpp"
 
 /**
@@ -14,27 +15,26 @@
  */
 class BaseWorker : public Activatable {
  public:
-  explicit BaseWorker(uint8_t worker_id) :
-      Activatable(),
-      worker_id(worker_id) {};
-  virtual ~BaseWorker() = default;
 
-  /**
-   * Get the worker id
-   * @return worker id
-   */
-  uint8_t get_worker_id() const {
-    return worker_id;
-  }
+  /// Enum can be replaced with custom implementation, or use custom enum starting at `= 1`
+  typedef enum Status {
+    e_worker_idle = -1,
+    e_worker_data_read,
+    e_worker_error,
+  } Status;
+
+  int8_t status = Status::e_worker_idle;
+
+  bool is_fresh() const { return active_state == e_state_active && status == e_worker_data_read; }
+
+  explicit BaseWorker() : Activatable() {};
+  virtual ~BaseWorker() = default;
 
   /**
    * Called by the aggregator to get new data. Will fill in the work report depending on its state and produced work
    * @return true if new data was produced.
    */
-  virtual bool work(WorkerStatus& status) = 0;
-
- private:
-  uint8_t worker_id;
+  virtual bool work() = 0;
 };
 
 /**
@@ -52,11 +52,8 @@ class Worker : public BaseWorker {
    * @param initial_val : initial value of the data it produces
    * @param break_duration : time in millis how long the delay should be between produced work.
    */
-  Worker(uint8_t worker_id, T initial_val, uint32_t break_duration = 1000)
-      : BaseWorker(worker_id),
-        data(initial_val),
-        break_duration(break_duration),
-        last_break(0) {
+  explicit Worker(T initial_val, uint32_t break_duration = 1000)
+      : BaseWorker(), data(initial_val), break_duration(break_duration), last_break(0) {
   }
 
   virtual ~Worker() = default;
@@ -71,27 +68,25 @@ class Worker : public BaseWorker {
    * Called by the aggregator to get new data. Will fill in the work report depending on its state and produced work
    * @return true if new data was produced.
    */
-  bool work(WorkerStatus& status) final {
-    if(status.active_state == _Status::e_state_activating_failed) {
+  bool work() final {
+    if(active_state == e_state_activating_failed) {
       // Still activating, will try to activate again
-      if (activate(true)) {
-        status.active_state = HandlerStatus::e_state_active;
-      }
-      else {
+      if(activate(true)) {
+        active_state = e_state_active;
+      } else {
         return false;
       }
     }
-    if(status.active()) {
+    if(active()) {
       if((millis() - last_break > break_duration || last_break == 0)) {
-        status.status = produce_data();
-        if(status.is_fresh()) {
+        status = produce_data();
+        if(is_fresh()) {
           // Work has been produced
           last_break = millis();
-          status.data = (void*) &data;
           return true;
         }
       }
-      status.status = WorkerStatus::e_worker_idle;
+      status = e_worker_idle;
     }
     return false;
   }
@@ -111,5 +106,7 @@ class Worker : public BaseWorker {
   uint32_t break_duration;
   uint32_t last_break;
 };
+
+typedef std::map<uint8_t, BaseWorker*> worker_map_t;
 
 #endif //SENSOR_REPORTER_SENSOR_HPP_

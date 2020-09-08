@@ -27,13 +27,13 @@ class Aggregator {
    * Add a new worker to the aggregator
    * @param worker
    */
-  void register_worker(BaseWorker& worker, bool activate = true);
+  void register_worker(uint8_t worker_id, BaseWorker& worker);
 
   /**
    * Add a new data handler to the aggregator
    * @param data handler
    */
-  void register_handler(Handler& handler, bool activate = true);
+  void register_handler(uint8_t handler_id, Handler& handler);
 
   /**
    * Add a new report supervisor to the aggregator, will be automatically activated
@@ -66,11 +66,10 @@ class Aggregator {
   void run();
 
  private:
-  std::map<uint8_t, BaseWorker*> workers;
-  std::map<uint8_t, Handler*> handlers;
+  worker_map_t workers;
+  handler_map_t handlers;
   std::vector<Supervisor*> supervisors;
 
-  Report report;
 };
 
 #endif //SENSOR_REPORTER_AGGREGATOR_HPP_

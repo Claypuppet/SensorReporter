@@ -5,16 +5,27 @@
 #ifndef SENSOR_HANDLER_INCLUDE_ACTIVATABLE_HPP_
 #define SENSOR_HANDLER_INCLUDE_ACTIVATABLE_HPP_
 
-#include <Report.hpp>
-
-class Aggregator;
-
 /**
  * Some abstract class used by the receiver and observer
  */
 class Activatable {
  public:
-  Activatable() = default;
+  typedef enum State {
+    e_state_inactive,
+    e_state_active,
+    e_state_activating_failed,
+  } State;
+
+  Activatable();
+
+  /**
+   * Activates / deactivates the data handler. If the activate / deactivate fails, status wont change
+   * Requires the data handler to be initialized
+   * @param active: true to activate, false to deactivate
+   */
+  virtual void set_active(bool _activate) final;
+
+  bool active() const { return active_state == e_state_active; }
 
  protected:
   /**
@@ -31,15 +42,7 @@ class Activatable {
    */
   virtual void deactivate();
 
- private:
-
-  /**
-   * Activates / deactivates the data handler. If the activate / deactivate fails, status wont change
-   * Requires the data handler to be initialized
-   * @param active: true to activate, false to deactivate
-   */
-  virtual void set_active(bool _activate, _Status& status) final;
-  friend Aggregator;
+  State active_state;
 };
 
 #endif //SENSOR_HANDLER_INCLUDE_ACTIVATABLE_HPP_

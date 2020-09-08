@@ -117,9 +117,9 @@ class SerialReporter : public Handler {
       const auto& data = dht_measurement.get<DHTData>();
       Serial.printf("Reporting data from my sensor: (temp: %f) (hum: %f)\n", data.temperature, data.humidity);
       Serial.flush();
-      return HandlerStatus::e_handler_data_handled;
+      return e_handler_data_handled;
     }
-    return HandlerStatus::e_handler_idle;
+    return e_handler_idle;
   }
 };
 

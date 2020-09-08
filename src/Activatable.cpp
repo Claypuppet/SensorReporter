@@ -4,12 +4,16 @@
 
 #include <Activatable.hpp>
 
-void Activatable::set_active(bool _activate, _Status& status) {
-  if(status.active_state == _Status::e_state_inactive && _activate) {
-    status.active_state = activate(false) ? _Status::e_state_active : _Status::e_state_activating_failed;
-  } else if(status.active_state != _Status::e_state_inactive && !_activate) {
+Activatable::Activatable(): active_state(e_state_inactive) {
+
+}
+
+void Activatable::set_active(bool _activate) {
+  if(active_state == e_state_inactive && _activate) {
+    active_state = activate(false) ? e_state_active : e_state_activating_failed;
+  } else if(active_state != e_state_inactive && !_activate) {
     deactivate();
-    status.active_state = _Status::e_state_inactive;
+    active_state = e_state_inactive;
   }
 }
 
