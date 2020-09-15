@@ -25,6 +25,11 @@ class Activatable {
    */
   virtual void set_active(bool _activate) final;
 
+  /**
+   * Initializes this (called once, when registered in the aggregator)
+   */
+  virtual void initialize() {}
+
   bool active() const { return active_state == e_state_active; }
 
  protected:

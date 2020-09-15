@@ -15,10 +15,9 @@ class Supervisor {
   virtual ~Supervisor() = default;
 
   /**
-   * Activate or deactivate the supervisor
-   * @return
+   * Initializes this (called once, when registered in the aggregator)
    */
-  virtual bool activate() { return true; }
+  virtual void initialize() {}
 
   /**
    * handle the full report

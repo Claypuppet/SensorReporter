@@ -10,6 +10,7 @@ void Aggregator::register_worker(uint8_t worker_id, BaseWorker& worker) {
   if(workers.find(worker_id) == workers.end()) {
     // Create new worker and measurement
     workers[worker_id] = &worker;
+    worker.initialize();
   } else {
     // Receiver with this id already exists...
     // TODO: add error logging
@@ -20,6 +21,7 @@ void Aggregator::register_handler(uint8_t handler_id, Handler& handler) {
   if(handlers.find(handler_id) == handlers.end()) {
     // Create new handler
     handlers[handler_id] = &handler;
+    handler.initialize();
   } else {
     // Observer with this id already exists...
     // TODO: add error logging
@@ -28,7 +30,7 @@ void Aggregator::register_handler(uint8_t handler_id, Handler& handler) {
 
 void Aggregator::register_supervisor(Supervisor& supervisor) {
   supervisors.push_back(&supervisor);
-  supervisor.activate();
+  supervisor.initialize();
 }
 
 void Aggregator::run() {
