@@ -47,12 +47,21 @@ class Worker : public BaseWorker {
  public:
   /**
    *
-   * Construct a worker_id
+   * Construct a worker, calls default constructor for data
+   * @param worker_id : unique id of the worker
+   * @param break_duration : time in millis how long the delay should be between produced work, default 0.
+   */
+  explicit Worker(uint32_t break_duration = 0)
+      : BaseWorker(), data(), break_duration(break_duration), last_break(0) {
+  }
+
+  /**
+   * Construct a worker with initial data T
    * @param worker_id : unique id of the worker
    * @param initial_val : initial value of the data it produces
-   * @param break_duration : time in millis how long the delay should be between produced work.
+   * @param break_duration : time in millis how long the delay should be between produced work, default 0.
    */
-  explicit Worker(T initial_val, uint32_t break_duration = 1000)
+  explicit Worker(T initial_val, uint32_t break_duration = 0)
       : BaseWorker(), data(initial_val), break_duration(break_duration), last_break(0) {
   }
 
