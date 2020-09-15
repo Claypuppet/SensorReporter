@@ -5,6 +5,9 @@
 #ifndef SENSOR_REPORTER_REPORTHANDLER_HPP_
 #define SENSOR_REPORTER_REPORTHANDLER_HPP_
 
+#include <Handler.hpp>
+#include <Worker.hpp>
+
 /**
  * Supervisor will oversee the full report. Mainly used for outputting all possible values (for example, put results on
  * a screen or control an LED).
