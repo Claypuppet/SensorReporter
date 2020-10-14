@@ -82,8 +82,6 @@ class Worker : public BaseWorker {
       // Still activating, will try to activate again
       if(activate(true)) {
         active_state = e_state_active;
-      } else {
-        return false;
       }
     }
     if(active()) {
