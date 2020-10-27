@@ -23,18 +23,31 @@ class BaseWorker : public Activatable {
     e_worker_error,
   } Status;
 
-  int8_t status = Status::e_worker_idle;
-
-  bool is_fresh() const { return active_state == e_state_active && status == e_worker_data_read; }
-
   explicit BaseWorker() : Activatable() {};
   virtual ~BaseWorker() = default;
+
+  /**
+   * Get status
+   * @return
+   */
+  int8_t get_status() const {
+    return status;
+  }
+
+  /**
+   * Checks if fresh data is read
+   * @return
+   */
+  bool is_fresh() const { return active_state == e_state_active && status == e_worker_data_read; }
 
   /**
    * Called by the aggregator to get new data. Will fill in the work report depending on its state and produced work
    * @return true if new data was produced.
    */
   virtual bool work() = 0;
+ protected:
+
+  int8_t status = Status::e_worker_idle;
 };
 
 /**
@@ -69,7 +82,7 @@ class Worker : public BaseWorker {
 
   /**
    * The main function to implement in sub classes, store produced work in `data` property
-   * @return true if the work was success (new data available)
+   * @return status code (BaseWorker::Status or any custom)
    */
   virtual int8_t produce_data() = 0;
 

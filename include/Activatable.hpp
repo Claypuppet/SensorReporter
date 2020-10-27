@@ -32,6 +32,8 @@ class Activatable {
 
   bool active() const { return active_state == e_state_active; }
 
+  State get_active_state() const { return active_state; }
+
  protected:
   /**
    * Perform an activate function, will be called when set_active(true)

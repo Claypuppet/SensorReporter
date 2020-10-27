@@ -37,6 +37,12 @@ class Handler : public Activatable {
    */
   virtual void try_handle_work(const worker_map_t& workers) final;
 
+  /**
+   * get current status
+   * @return  status code (HandlerStatus::StatusCode or any custom)
+   */
+  int8_t get_status() const;
+
  protected:
   /**
    * Handle the data produced by workers
@@ -46,7 +52,7 @@ class Handler : public Activatable {
   virtual int8_t handle_produced_work(const worker_map_t& workers) = 0;
 
 
- private:
+ protected:
   int8_t status;
 };
 
