@@ -106,7 +106,9 @@ class Worker : public BaseWorker {
           return true;
         }
       }
-      status = e_worker_idle;
+      else {
+        status = e_worker_idle;
+      }
     }
     return false;
   }
