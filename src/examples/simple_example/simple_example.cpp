@@ -58,7 +58,7 @@ class LedReporter : public Handler {
 
   int8_t handle_produced_work(const worker_map_t& workers) override {
     auto my_sensor_measurement = (MySensor*) workers.at(e_my_sensor);
-    if(my_sensor_measurement && my_sensor_measurement->status == BaseWorker::e_worker_data_read) {
+    if(my_sensor_measurement && my_sensor_measurement->get_status() == BaseWorker::e_worker_data_read) {
       if(my_sensor_measurement->get_data().measurement % 2) {
         digitalWrite(BUILTIN_LED, HIGH);
       } else {
@@ -84,8 +84,8 @@ class SerialReporter : public Handler {
   }
 
   int8_t handle_produced_work(const worker_map_t & workers) override {
-    auto my_sensor_measurement = (MySensor*) workers.at(e_my_sensor);
-    if(my_sensor_measurement && my_sensor_measurement->status == BaseWorker::e_worker_data_read) {
+    const auto& my_sensor_measurement = workers.worker<MySensor>(e_my_sensor);
+    if(my_sensor_measurement && my_sensor_measurement->get_status() == BaseWorker::e_worker_data_read) {
       // Retrieve data as reference to avoid calling copy constructor
       const auto& data = my_sensor_measurement->get_data();
       Serial.printf("Reporting data from my sensor: %d! (%s)\n", data.measurement, data.some_text);

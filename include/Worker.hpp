@@ -129,6 +129,14 @@ class Worker : public BaseWorker {
   uint32_t last_break;
 };
 
-typedef std::map<uint8_t, BaseWorker*> worker_map_t;
+class WorkerMap : public std::map<uint8_t, BaseWorker*> {
+ public:
+  template<typename T>
+  const T* worker(uint8_t idx) const {
+    return (T*) at(idx);
+  }
+};
+
+typedef WorkerMap worker_map_t;
 
 #endif //SENSOR_REPORTER_SENSOR_HPP_

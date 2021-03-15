@@ -1,8 +1,8 @@
 {
   "name": "SensorReporter",
   "keywords": "sensor",
-  "description": "Arduino library / framework report any sensor data",
-  "version": "0.1.0",
+  "description": "Arduino library / framework to read data from sensors (workers), process the data (handlers) and feedback the user (supervisors)",
+  "version": "0.2.0",
   "frameworks": "arduino",
   "platforms": "espressif32",
   "repository": {

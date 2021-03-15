@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <DHT.h>
+#include <DHP.hpp>
 
 #include "Aggregator.hpp"
 
@@ -27,7 +27,7 @@ struct DHTData {
  */
 class MyDHTSensor : public DHT, public Worker<DHTData> {
  public:
-  MyDHTSensor() : DHT(), Worker<DHTData>(e_my_sensor, DHTData{0, 0}, 2000) {}
+  MyDHTSensor() : DHT(), Worker<DHTData>(DHTData{0, 0}, 2000) {}
 
  protected:
   bool activate(bool retry) override {
@@ -44,10 +44,10 @@ class MyDHTSensor : public DHT, public Worker<DHTData> {
       data.temperature = getTemperature();
       data.humidity = getHumidity();
       if(data.temperature != NAN && data.humidity != NAN) {
-        return WorkerStatus::e_worker_data_read;
+        return Worker::e_worker_data_read;
       }
     }
-    return WorkerStatus::e_worker_error;
+    return Worker::e_worker_error;
   }
 };
 
@@ -68,7 +68,7 @@ struct SerialCommand {
 class SerialCommandReader : public Worker<SerialCommand> {
  public:
 
-  SerialCommandReader() : Worker<SerialCommand>(e_serial_reader, {SerialCommand::e_invalid, 0}, 0) {}
+  SerialCommandReader() : Worker<SerialCommand>({SerialCommand::e_invalid, 0}, 0) {}
 
  protected:
   /**
@@ -79,7 +79,7 @@ class SerialCommandReader : public Worker<SerialCommand> {
   int8_t produce_data() override {
     if(Serial.available() > 0) {
       char command = Serial.read();
-      if(Serial.available() <= 0) return WorkerStatus::e_worker_idle;
+      if(Serial.available() <= 0) return Worker::e_worker_idle;
       auto string = Serial.readString();
       switch(command){
         case SerialCommand::e_threshold:
@@ -91,14 +91,14 @@ class SerialCommandReader : public Worker<SerialCommand> {
           data.val = string.toInt() != 0;
           break;
         default:
-          return WorkerStatus::e_worker_idle;
+          return Worker::e_worker_idle;
       }
       if(data.val == 0 && string.indexOf('0') < 0) {
-        return WorkerStatus::e_worker_error;
+        return Worker::e_worker_error;
       }
-      return WorkerStatus::e_worker_data_read;
+      return Worker::e_worker_data_read;
     }
-    return WorkerStatus::e_worker_idle;
+    return Worker::e_worker_idle;
   }
 };
 
@@ -107,14 +107,14 @@ class SerialCommandReader : public Worker<SerialCommand> {
  */
 class SerialReporter : public Handler {
  public:
-  SerialReporter() : Handler(e_my_serial_handler) {}
+  SerialReporter() : Handler() {}
 
  protected:
-  int8_t handle_produced_work(const worker_status_t& worker_stats) override {
-    auto dht_measurement = worker_stats.at(e_my_sensor);
-    if(dht_measurement.is_fresh()) {
+  int8_t handle_produced_work(const worker_map_t& workers) override {
+    auto dht_measurement = workers.worker<MyDHTSensor>(e_my_sensor);
+    if(dht_measurement->is_fresh()) {
       // Retrieve data as reference to avoid calling copy constructor
-      const auto& data = dht_measurement.get<DHTData>();
+      const auto& data = dht_measurement->get_data();
       Serial.printf("Reporting data from my sensor: (temp: %f) (hum: %f)\n", data.temperature, data.humidity);
       Serial.flush();
       return e_handler_data_handled;
@@ -130,18 +130,14 @@ class SerialSupervisor : public Supervisor {
  public:
   SerialSupervisor() : Supervisor() {}
 
- protected:
-  bool activate() override {
+  void initialize() override {
     Serial.begin(115200);
-    return true;
   }
 
- public:
-  void handle_report(const Report& report) override {
-    auto& worker_stats = report.get_worker_stats();
-    auto& serial_reader = worker_stats.at(e_serial_reader);
-    if(serial_reader.is_fresh()) {
-      auto& command = serial_reader.get<SerialCommand>();
+  void handle_report(const worker_map_t& workers, const handler_map_t& handlers) override {
+    const auto& serial_reader = workers.worker<SerialCommandReader>(e_serial_reader);
+    if(serial_reader->is_fresh()) {
+      auto& command = serial_reader->get_data();
       switch(command.type){
         case SerialCommand::e_threshold:
           Serial.printf("threshold now: %d\n", command.val);
@@ -154,9 +150,8 @@ class SerialSupervisor : public Supervisor {
           break;
       }
     }
-    auto& handler_stats = report.get_handler_stats();
-    auto& output_handler = handler_stats.at((e_my_serial_handler));
-    if(output_handler.status == HandlerStatus::e_handler_data_handled) {
+    auto& output_handler = handlers.at((e_my_serial_handler));
+    if(output_handler->get_status() == Handler::e_handler_data_handled) {
       Serial.printf("output successfully handled the data\n");
     }
   }
@@ -170,9 +165,9 @@ SerialSupervisor supervisor;
 void setup() {
   Serial.begin(115200);
 
-  aggregator.register_worker(sensor);
-  aggregator.register_worker(serial_reader);
-  aggregator.register_handler(handler_s);
+  aggregator.register_worker(e_my_sensor, sensor);
+  aggregator.register_worker(e_serial_reader, serial_reader);
+  aggregator.register_handler(e_my_serial_handler, handler_s);
   aggregator.register_supervisor(supervisor);
 }
 
