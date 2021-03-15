@@ -150,7 +150,7 @@ class SerialSupervisor : public Supervisor {
           break;
       }
     }
-    auto& output_handler = handlers.at((e_my_serial_handler));
+    const auto& output_handler = handlers.handler<SerialReporter>((e_my_serial_handler));
     if(output_handler->get_status() == Handler::e_handler_data_handled) {
       Serial.printf("output successfully handled the data\n");
     }

@@ -56,7 +56,15 @@ class Handler : public Activatable {
   int8_t status;
 };
 
-typedef std::map<uint8_t, Handler*> handler_map_t;
+class HandlerMap : public std::map<uint8_t, Handler*> {
+ public:
+  template<typename T, typename std::enable_if<std::is_base_of<Handler, T>::value>::type* = nullptr>
+  T* handler(uint8_t idx) const {
+    return (T*) at(idx);
+  }
+};
+
+typedef HandlerMap handler_map_t;
 
 
 #endif //SENSOR_REPORTER_REPORTER_HPP_

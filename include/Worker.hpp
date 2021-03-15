@@ -131,8 +131,8 @@ class Worker : public BaseWorker {
 
 class WorkerMap : public std::map<uint8_t, BaseWorker*> {
  public:
-  template<typename T>
-  const T* worker(uint8_t idx) const {
+  template<typename T, typename std::enable_if<std::is_base_of<BaseWorker, T>::value>::type* = nullptr>
+  T* worker(uint8_t idx) const {
     return (T*) at(idx);
   }
 };
