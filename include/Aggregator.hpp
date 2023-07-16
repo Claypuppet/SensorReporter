@@ -66,8 +66,8 @@ class Aggregator {
   void run();
 
  private:
-  worker_map_t workers;
-  handler_map_t handlers;
+  WorkerMap workers;
+  HandlerMap handlers;
   std::vector<Supervisor*> supervisors;
 
 };

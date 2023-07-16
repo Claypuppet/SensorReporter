@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <DHP.hpp>
 
-#include "Aggregator.hpp"
+#include <Aggregator.hpp>
 
 #define DHT_PIN 19
 
@@ -110,7 +110,7 @@ class SerialReporter : public Handler {
   SerialReporter() : Handler() {}
 
  protected:
-  int8_t handle_produced_work(const worker_map_t& workers) override {
+  int8_t handle_produced_work(const WorkerMap& workers) override {
     auto dht_measurement = workers.worker<MyDHTSensor>(e_my_sensor);
     if(dht_measurement->is_fresh()) {
       // Retrieve data as reference to avoid calling copy constructor
@@ -134,7 +134,7 @@ class SerialSupervisor : public Supervisor {
     Serial.begin(115200);
   }
 
-  void handle_report(const worker_map_t& workers, const handler_map_t& handlers) override {
+  void handle_report(const WorkerMap& workers, const HandlerMap& handlers) override {
     const auto& serial_reader = workers.worker<SerialCommandReader>(e_serial_reader);
     if(serial_reader->is_fresh()) {
       auto& command = serial_reader->get_data();

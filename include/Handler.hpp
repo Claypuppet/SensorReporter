@@ -35,7 +35,7 @@ class Handler : public Activatable {
    * @param work_reports: worker reports to handle
    * @param status: reference to the status to fill of this data handler
    */
-  virtual void try_handle_work(const worker_map_t& workers) final;
+  virtual void try_handle_work(const WorkerMap& workers) final;
 
   /**
    * get current status
@@ -49,7 +49,7 @@ class Handler : public Activatable {
    * @param worker_reports: All the data from the workers
    * @return status code (HandlerStatus::StatusCode or any custom)
    */
-  virtual int8_t handle_produced_work(const worker_map_t& workers) = 0;
+  virtual int8_t handle_produced_work(const WorkerMap& workers) = 0;
 
 
  protected:

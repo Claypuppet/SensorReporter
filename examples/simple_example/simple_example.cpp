@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#include "Aggregator.hpp"
+#include <Aggregator.hpp>
 
 enum SensorTypes {
   e_my_sensor = 0
@@ -56,7 +56,7 @@ class LedReporter : public Handler {
     return true;
   }
 
-  int8_t handle_produced_work(const worker_map_t& workers) override {
+  int8_t handle_produced_work(const WorkerMap& workers) override {
     auto my_sensor_measurement = workers.worker<MySensor>(e_my_sensor);
     if(my_sensor_measurement && my_sensor_measurement->get_status() == BaseWorker::e_worker_data_read) {
       if(my_sensor_measurement->get_data().measurement % 2) {
@@ -83,7 +83,7 @@ class SerialReporter : public Handler {
     return true;
   }
 
-  int8_t handle_produced_work(const worker_map_t & workers) override {
+  int8_t handle_produced_work(const WorkerMap & workers) override {
     const auto& my_sensor_measurement = workers.worker<MySensor>(e_my_sensor);
     if(my_sensor_measurement && my_sensor_measurement->get_status() == BaseWorker::e_worker_data_read) {
       // Retrieve data as reference to avoid calling copy constructor

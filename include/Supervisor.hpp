@@ -26,7 +26,7 @@ class Supervisor {
    * handle the full report
    * @param report
    */
-  virtual void handle_report(const worker_map_t& workers, const handler_map_t& handlers) = 0;
+  virtual void handle_report(const WorkerMap& workers, const HandlerMap& handlers) = 0;
 
 };
 
