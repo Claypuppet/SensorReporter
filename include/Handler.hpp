@@ -10,6 +10,8 @@
 #include <Arduino.h>
 #include <map>
 
+class Aggregator;
+
 /**
  * The handler can report the produced work to some desired output or handle it internally.
  */
@@ -31,13 +33,6 @@ class Handler : public Activatable {
   virtual ~Handler() = default;
 
   /**
-   * Call the data handler sequence to report worker_reports
-   * @param work_reports: worker reports to handle
-   * @param status: reference to the status to fill of this data handler
-   */
-  virtual void try_handle_work(const WorkerMap& workers) final;
-
-  /**
    * get current status
    * @return  status code (HandlerStatus::StatusCode or any custom)
    */
@@ -51,9 +46,18 @@ class Handler : public Activatable {
    */
   virtual int8_t handle_produced_work(const WorkerMap& workers) = 0;
 
-
- protected:
   int8_t status;
+
+ private:
+
+  /**
+   * Call the data handler sequence to report worker_reports
+   * @param work_reports: worker reports to handle
+   * @param status: reference to the status to fill of this data handler
+   */
+  virtual void try_handle_work(const WorkerMap& workers) final;
+
+  friend Aggregator;
 };
 
 class HandlerMap : public std::map<uint8_t, Handler*> {
@@ -61,6 +65,14 @@ class HandlerMap : public std::map<uint8_t, Handler*> {
   template<typename T, typename std::enable_if<std::is_base_of<Handler, T>::value>::type* = nullptr>
   T* handler(uint8_t idx) const {
     return (T*) at(idx);
+  }
+
+  bool any_updates() const {
+    return std::any_of(
+        begin(),
+        end(),
+        [](const std::pair<uint8_t, Handler*>& pair){return pair.second->get_status() != Handler::e_handler_idle;}
+    );
   }
 };
 

@@ -9,6 +9,8 @@
 #include <map>
 #include "Activatable.hpp"
 
+class Aggregator;
+
 /**
  * Base class for the worker
  * To use this, extend the Worker class
@@ -38,16 +40,21 @@ class BaseWorker : public Activatable {
    * Checks if fresh data is read
    * @return
    */
-  bool is_fresh() const { return active_state == e_state_active && status == e_worker_data_read; }
+  bool is_fresh() const { return get_active_state() == e_state_active && status == e_worker_data_read; }
+
+ protected:
+
+  int8_t status = Status::e_worker_idle;
+
+ private:
 
   /**
    * Called by the aggregator to get new data. Will fill in the work report depending on its state and produced work
    * @return true if new data was produced.
    */
   virtual bool work() = 0;
- protected:
 
-  int8_t status = Status::e_worker_idle;
+  friend Aggregator;
 };
 
 /**
@@ -81,17 +88,30 @@ class Worker : public BaseWorker {
   virtual ~Worker() = default;
 
   /**
+   * Get the current data from the worker
+   * @return current data
+   */
+  const T& get_data() const {
+    return data;
+  }
+
+ protected:
+  /**
    * The main function to implement in sub classes, store produced work in `data` property
    * @return status code (BaseWorker::Status or any custom)
    */
   virtual int8_t produce_data() = 0;
+
+  T data;
+
+ private:
 
   /**
    * Called by the aggregator to get new data. Will fill in the work report depending on its state and produced work
    * @return true if new data was produced.
    */
   bool work() final {
-    if(active_state == e_state_activating_failed) {
+    if(get_active_state() == e_state_activating_failed) {
       // Still activating, will try to activate again
       if(activate(true)) {
         active_state = e_state_active;
@@ -113,20 +133,10 @@ class Worker : public BaseWorker {
     return false;
   }
 
-  /**
-   * Get the current data from the worker
-   * @return current data
-   */
-  const T& get_data() const {
-    return data;
-  }
-
- protected:
-  T data;
-
- private:
   uint32_t break_duration;
   uint32_t last_break;
+
+  friend Aggregator;
 };
 
 class WorkerMap : public std::map<uint8_t, BaseWorker*> {
@@ -134,6 +144,14 @@ class WorkerMap : public std::map<uint8_t, BaseWorker*> {
   template<typename T, typename std::enable_if<std::is_base_of<BaseWorker, T>::value>::type* = nullptr>
   T* worker(uint8_t idx) const {
     return (T*) at(idx);
+  }
+
+  bool any_updates() const {
+    return std::any_of(
+      begin(),
+      end(),
+      [](const std::pair<uint8_t, BaseWorker*>& pair){return pair.second->get_status() != BaseWorker::e_worker_idle;}
+    );
   }
 };
 

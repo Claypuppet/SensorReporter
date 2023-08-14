@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <DHP.hpp>
+#include <DHT.h>
 
 #include <Aggregator.hpp>
 
@@ -25,7 +25,7 @@ struct DHTData {
 /**
  * Some sensor that counts upwards every second
  */
-class MyDHTSensor : public DHT, public Worker<DHTData> {
+class MyDHTSensor : private DHT, public Worker<DHTData> {
  public:
   MyDHTSensor() : DHT(), Worker<DHTData>(DHTData{0, 0}, 2000) {}
 
@@ -169,6 +169,7 @@ void setup() {
   aggregator.register_worker(e_serial_reader, serial_reader);
   aggregator.register_handler(e_my_serial_handler, handler_s);
   aggregator.register_supervisor(supervisor);
+
 }
 
 void loop() {
