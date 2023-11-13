@@ -3,7 +3,8 @@
 #include <Aggregator.hpp>
 
 enum SensorTypes {
-  e_my_sensor = 0
+  e_my_sensor = 0,
+  e_echo
 };
 
 enum ReporterTypes {
@@ -33,12 +34,33 @@ class MySensor : public Worker<MySensorData> {
  protected:
   /**
    * When measured, increment the data
-   * @return true
    */
   int8_t produce_data() override {
     ++data.measurement;
     data.set_some_text(data.measurement % 5 ? "hokey pokey" : "ee macarena");
     return e_worker_data_read;
+  }
+};
+
+/**
+ * Some sensor that counts upwards every second
+ */
+class Echo : public ProcessWorker<int> {
+ public:
+  Echo() : ProcessWorker<int>(false) {
+  }
+
+ protected:
+  /**
+   * copy measurement from sensor
+   */
+  int8_t produce_data(const worker_map_t& workers) override {
+    const auto& worker = workers.worker<MySensor>(e_my_sensor);
+    if (worker->is_fresh()) {
+      data = worker->get_data().measurement;
+      return e_worker_data_read;
+    }
+    return e_worker_idle;
   }
 };
 
@@ -58,7 +80,7 @@ class LedReporter : public Handler {
 
   int8_t handle_produced_work(const WorkerMap& workers) override {
     auto my_sensor_measurement = workers.worker<MySensor>(e_my_sensor);
-    if(my_sensor_measurement && my_sensor_measurement->get_status() == BaseWorker::e_worker_data_read) {
+    if(my_sensor_measurement && my_sensor_measurement->is_fresh()) {
       if(my_sensor_measurement->get_data().measurement % 2) {
         digitalWrite(BUILTIN_LED, HIGH);
       } else {
@@ -85,10 +107,12 @@ class SerialReporter : public Handler {
 
   int8_t handle_produced_work(const WorkerMap & workers) override {
     const auto& my_sensor_measurement = workers.worker<MySensor>(e_my_sensor);
+    const auto& my_echo = workers.worker<Echo>(e_echo);
     if(my_sensor_measurement && my_sensor_measurement->get_status() == BaseWorker::e_worker_data_read) {
       // Retrieve data as reference to avoid calling copy constructor
       const auto& data = my_sensor_measurement->get_data();
       Serial.printf("Reporting data from my sensor: %d! (%s)\n", data.measurement, data.some_text);
+      Serial.printf("(My echo says: %d)\n", my_echo->get_data());
       Serial.flush();
       return e_handler_data_handled;
     }
@@ -98,17 +122,20 @@ class SerialReporter : public Handler {
 
 Aggregator aggregator;
 MySensor sensor;
+Echo echo;
 LedReporter handler_l;
 SerialReporter handler_s;
 
 void setup() {
   // register workers/handlers
+  aggregator.register_worker(e_echo, echo);
   aggregator.register_worker(e_my_sensor, sensor);
   aggregator.register_handler(e_my_led_handler, handler_l);
   aggregator.register_handler(e_my_serial_handler, handler_s);
 
   // Activate workers/handlers
-  aggregator.set_handler_active(e_my_sensor, true);
+  aggregator.set_worker_active(e_echo, true);
+  aggregator.set_worker_active(e_my_sensor, true);
   aggregator.set_handler_active(e_my_led_handler, true);
   aggregator.set_handler_active(e_my_serial_handler, true);
 }

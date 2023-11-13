@@ -35,15 +35,22 @@ void Aggregator::register_supervisor(Supervisor& supervisor) {
 
 void Aggregator::run() {
   bool any_new = false;
-  // get worker_reports from the data workers
+  // Workers produce data
   for(const auto& w : workers) {
     auto& worker = w.second;
-    if(worker && worker->work()) {
+    if(worker && !worker->is_process_worker() && worker->work(workers)) {
+      any_new = true;
+    }
+  }
+  for(const auto& w : workers) {
+    // Process workers produce data using the workers
+    auto& worker = w.second;
+    if(worker && worker->is_process_worker() && worker->work(workers)) {
       any_new = true;
     }
   }
   if(any_new) {
-    // Report the worker_reports
+    // Handlers handle produced work
     for(const auto& r : handlers) {
       auto handler = r.second;
       if(handler) {
@@ -51,7 +58,7 @@ void Aggregator::run() {
       }
     }
   }
-  // Handle the final report
+  // Submit final report
   for(const auto& report_handler : supervisors) {
     if(report_handler) {
       report_handler->handle_report(workers, handlers);
