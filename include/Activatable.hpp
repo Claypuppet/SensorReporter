@@ -5,9 +5,6 @@
 #ifndef SENSOR_HANDLER_INCLUDE_ACTIVATABLE_HPP_
 #define SENSOR_HANDLER_INCLUDE_ACTIVATABLE_HPP_
 
-class Aggregator;
-class Handler;
-
 /**
  * Some abstract class used by the receiver and observer
  */
@@ -21,9 +18,24 @@ class Activatable {
 
   Activatable();
 
+  /**
+   * Returns true if worker/handler is active
+   * @return
+   */
   bool active() const { return active_state == e_state_active; }
 
+  /**
+   * Returns current state of the worker/handler
+   * @return
+   */
   State get_active_state() const { return active_state; }
+
+  /**
+   * Activates / deactivates the data worker/handler. If the activate / deactivate fails, status wont change
+   * Requires the data handler to be initialized
+   * @param active: true to activate, false to deactivate
+   */
+  virtual void set_active(bool _activate) final;
 
  protected:
 
@@ -47,17 +59,6 @@ class Activatable {
   virtual void deactivate();
 
   State active_state;
-
- private:
-
-  /**
-   * Activates / deactivates the data handler. If the activate / deactivate fails, status wont change
-   * Requires the data handler to be initialized
-   * @param active: true to activate, false to deactivate
-   */
-  virtual void set_active(bool _activate) final;
-
-  friend Aggregator;
 };
 
 #endif //SENSOR_HANDLER_INCLUDE_ACTIVATABLE_HPP_
