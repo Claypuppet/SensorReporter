@@ -56,11 +56,11 @@ bool BaseWorker::work(const worker_map_t& workers) {
   return false;
 }
 
-int8_t BaseWorker::start_task(const char* task_name, uint8_t core, uint8_t priority) {
+int8_t BaseWorker::start_task(const char* task_name, uint32_t memory, uint8_t priority, uint8_t core) {
   if (xAsyncWorkerHandle != nullptr) {
-    return false;
+    return e_worker_data_working; // Already working
   }
-  xTaskCreatePinnedToCore(BaseWorker::run_task, task_name, 2048, this, priority, &xAsyncWorkerHandle, core);
+  xTaskCreatePinnedToCore(BaseWorker::run_task, task_name, memory, this, priority, &xAsyncWorkerHandle, core);
   return e_worker_data_working;
 }
 

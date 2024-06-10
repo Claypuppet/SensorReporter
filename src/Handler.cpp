@@ -32,11 +32,11 @@ int8_t Handler::handle_async() {
   return e_handler_idle;
 }
 
-int8_t Handler::start_task(const char* task_name, uint8_t core, uint8_t priority) {
+int8_t Handler::start_task(const char* task_name, uint32_t memory, uint8_t priority, uint8_t core) {
   if (xAsyncHandlerHandle != nullptr) {
-    return false;
+    return e_handler_data_handling; // already handling
   }
-  xTaskCreatePinnedToCore(Handler::run_task, task_name, 2048, this, priority, &xAsyncHandlerHandle, core);
+  xTaskCreatePinnedToCore(Handler::run_task, task_name, memory, this, priority, &xAsyncHandlerHandle, core);
   return e_handler_data_handling;
 }
 

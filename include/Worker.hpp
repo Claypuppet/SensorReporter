@@ -87,7 +87,7 @@ class BaseWorker : public Activatable {
 
   virtual bool is_process_worker() const = 0;
 
-  int8_t start_task(const char* task_name, uint8_t core=0, uint8_t priority=5);
+  int8_t start_task(const char* task_name, uint32_t memory=1024, uint8_t priority=5, uint8_t core=0);
   void kill_task();
 
   virtual bool task_running() const;
