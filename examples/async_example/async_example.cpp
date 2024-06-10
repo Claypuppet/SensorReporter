@@ -45,9 +45,9 @@ class MySensor : public Worker<MySensorData> {
 /**
  * Some sensor that counts upwards every second
  */
-class Echo : public ProcessWorker<int> {
+class DelayedSuperIncrement : public ProcessWorker<int> {
  public:
-  Echo() : ProcessWorker<int>(false) {
+  DelayedSuperIncrement() : ProcessWorker<int>(false), some_value(0) {
   }
 
  protected:
@@ -57,11 +57,24 @@ class Echo : public ProcessWorker<int> {
   int8_t produce_data(const worker_map_t& workers) override {
     const auto& worker = workers.worker<MySensor>(e_my_sensor);
     if (worker->is_fresh()) {
-      data = worker->get_data().measurement;
-      return e_worker_data_read;
+      // Prepare internal data to be processed async
+      some_value = worker->get_data().measurement;
+      return start_task("yah");
     }
     return e_worker_idle;
   }
+
+  int8_t produce_async_data() override {
+    delay(1500);
+    return e_worker_data_read;
+  }
+
+  void finish_produced_data() override {
+    // Set data after async handle
+    data = some_value;
+  }
+
+  int some_value{};
 };
 
 /**
@@ -97,7 +110,7 @@ class LedReporter : public Handler {
  */
 class SerialReporter : public Handler {
  public:
-  SerialReporter() : Handler() {}
+  SerialReporter() : Handler(), to_write("") {}
 
  protected:
   bool activate(bool retry) override {
@@ -107,22 +120,37 @@ class SerialReporter : public Handler {
 
   int8_t handle_produced_work(const WorkerMap & workers) override {
     const auto& my_sensor_measurement = workers.worker<MySensor>(e_my_sensor);
-    const auto& my_echo = workers.worker<Echo>(e_echo);
+    const auto& my_echo = workers.worker<DelayedSuperIncrement>(e_echo);
+    sprintf(to_write, "");
     if(my_sensor_measurement && my_sensor_measurement->is_fresh()) {
       // Retrieve data as reference to avoid calling copy constructor
       const auto& data = my_sensor_measurement->get_data();
-      Serial.printf("Reporting data from my sensor: %d! (%s)\n", data.measurement, data.some_text);
-      Serial.printf("(My echo says: %d)\n", my_echo->get_data());
-      Serial.flush();
-      return e_handler_data_handled;
+      sprintf(to_write, "Reporting data from my sensor: %d! (%s)\n", data.measurement, data.some_text);
+    }
+    if(my_echo && my_echo->is_fresh()) {
+      // Retrieve data as reference to avoid calling copy constructor
+      sprintf(to_write + strlen(to_write), "(My delayed echo says: %d)\n", my_echo->get_data());
+    }
+    if (strlen(to_write)) {
+      return start_task("serial_writing");
     }
     return e_handler_idle;
   }
+
+  int8_t handle_async() override {
+    delay(100);
+    Serial.print(to_write);
+    Serial.flush();
+
+    return e_handler_data_handled;
+  }
+
+  char to_write[500] = "";
 };
 
 Aggregator aggregator;
 MySensor sensor;
-Echo echo;
+DelayedSuperIncrement echo;
 LedReporter handler_l;
 SerialReporter handler_s;
 

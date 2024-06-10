@@ -49,13 +49,11 @@ void Aggregator::run() {
       any_new = true;
     }
   }
-  if(any_new) {
-    // Handlers handle produced work
-    for(const auto& r : handlers) {
-      auto handler = r.second;
-      if(handler) {
-        handler->try_handle_work(workers);
-      }
+  // Handlers handle produced work
+  for(const auto& r : handlers) {
+    auto handler = r.second;
+    if(handler && (any_new || handler->get_status() == Handler::e_handler_data_handling)) {
+      handler->try_handle_work(workers);
     }
   }
   // Submit final report
@@ -64,6 +62,7 @@ void Aggregator::run() {
       report_handler->handle_report(workers, handlers);
     }
   }
+
 }
 
 void Aggregator::set_worker_active(uint8_t worker_id, bool active) {

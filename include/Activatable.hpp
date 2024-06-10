@@ -22,20 +22,20 @@ class Activatable {
    * Returns true if worker/handler is active
    * @return
    */
-  bool active() const { return active_state == e_state_active; }
+  bool active() const;
 
   /**
    * Returns current state of the worker/handler
    * @return
    */
-  State get_active_state() const { return active_state; }
+  State get_active_state() const;
 
   /**
    * Activates / deactivates the data worker/handler. If the activate / deactivate fails, status wont change
    * Requires the data handler to be initialized
    * @param active: true to activate, false to deactivate
    */
-  virtual void set_active(bool _activate) final;
+  virtual bool set_active(bool _activate) final;
 
  protected:
 
@@ -58,6 +58,7 @@ class Activatable {
    */
   virtual void deactivate();
 
+ private:
   State active_state;
 };
 

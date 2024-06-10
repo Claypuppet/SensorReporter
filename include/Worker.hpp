@@ -12,6 +12,10 @@
 class Aggregator;
 class WorkerMap;
 
+template<typename T>
+class Worker;
+
+
 typedef WorkerMap worker_map_t;
 
 /**
@@ -25,48 +29,68 @@ class BaseWorker : public Activatable {
   typedef enum Status {
     e_worker_idle = -1,
     e_worker_data_read,
+    e_worker_data_working, // For async
     e_worker_error,
   } Status;
 
-  explicit BaseWorker(uint32_t break_duration = 0)
-      : Activatable(), break_duration(break_duration), last_produce(0), status(Status::e_worker_idle) {};
+  explicit BaseWorker(uint32_t break_duration = 0);
   virtual ~BaseWorker() = default;
 
-  /**
-   * Get status
-   * @return
-   */
-  int8_t get_status() const {
-    return status;
-  }
+  explicit BaseWorker(BaseWorker& copy) = delete;
+
 
   /**
    * Get status
    * @return
    */
-  uint32_t get_last_produce() const {
-    return last_produce;
-  }
+  int8_t get_status() const;
+
+  /**
+   * Get status
+   * @return
+   */
+  uint32_t get_last_produce() const;
 
   /**
    * Checks if fresh data is read
    * @return
    */
-  bool is_fresh() const { return get_active_state() == e_state_active && status == e_worker_data_read; }
+  bool is_fresh() const;
 
  protected:
   /**
    * The main function to implement in sub classes, store produced work in `data` property
+   * Used by normal workers
    * @return status code (BaseWorker::Status or any custom)
    */
   virtual int8_t produce_data() = 0;
 
   /**
    * The main function to implement in sub classes, store produced work in `data` property
+   * Used by process workers
    * @return status code (BaseWorker::Status or any custom)
    */
   virtual int8_t produce_data(const worker_map_t& workers) = 0;
+
+  /**
+   * Function that is run async in a separate task, do NOT access worker.data from this
+   * prepare data inside the instance, to be copied afterwards in the main loop by implementing `finish_produced_data`
+   * @return status code (BaseWorker::Status or any custom)
+   */
+  virtual int8_t produce_async_data();
+
+  /**
+   * Implement this function to finalize async results to the data to be used in the rest of the system.
+   * This function is called by the main thread after the task to produce async data was finished.
+   */
+  virtual void finish_produced_data();
+
   virtual bool is_process_worker() const = 0;
+
+  int8_t start_task(const char* task_name, uint8_t core=0, uint8_t priority=5);
+  void kill_task();
+
+  virtual bool task_running() const;
 
  private:
 
@@ -74,32 +98,18 @@ class BaseWorker : public Activatable {
    * Called by the aggregator to get new data. Will fill in the work report depending on its state and produced work
    * @return true if new data was produced.
    */
-  virtual bool work(const worker_map_t& workers) final {
-    if (get_active_state() == e_state_activating_failed) {
-      // Still activating, will try to activate again
-      if (activate(true)) {
-        active_state = e_state_active;
-      }
-    }
-    if (active()) {
-      if ((millis() - last_produce > break_duration || last_produce == 0)) {
-        status = is_process_worker() ? produce_data(workers) : produce_data();
-        if (is_fresh()) {
-          // Work has been produced
-          last_produce = millis();
-          return true;
-        }
-      }
-      else {
-        status = e_worker_idle;
-      }
-    }
-    return false;
-  }
+  bool work(const worker_map_t& workers);
 
   uint32_t break_duration;
   uint32_t last_produce;
   int8_t status;
+  int8_t async_result_status;
+
+ private:
+
+  static void run_task(void* instance);
+
+  TaskHandle_t xAsyncWorkerHandle;
 
   friend Aggregator;
 };
@@ -132,13 +142,14 @@ class Worker : public BaseWorker {
       : BaseWorker(break_duration), data(initial_val) {
   }
 
-  virtual ~Worker() = default;
+  virtual ~Worker() {
+  };
 
   /**
    * Get the current data from the worker
    * @return current data
    */
-  const T& get_data() const {
+  const T& get_data() {
     return data;
   }
 
@@ -154,6 +165,7 @@ class Worker : public BaseWorker {
     // Process worker will be called with produce_data(workers)
     return e_worker_idle;
   };
+
 };
 
 /**
@@ -210,15 +222,7 @@ class WorkerMap : public std::map<uint8_t, BaseWorker*> {
     return (T*) at(idx);
   }
 
-  bool any_updates() const {
-    return std::any_of(
-        begin(),
-        end(),
-        [](const std::pair<uint8_t, BaseWorker*>& pair) {
-          return pair.second->get_status() != BaseWorker::e_worker_idle;
-        }
-    );
-  }
+  bool any_updates() const;
 };
 
 #endif //SENSOR_REPORTER_SENSOR_HPP_

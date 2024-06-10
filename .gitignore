@@ -4,6 +4,9 @@
 CMakeLists.txt
 CMakeListsPrivate.txt
 
+#sym link examples
+src/examples
+
 
 # Created by https://www.gitignore.io/api/c++,clion,platformio
 # Edit at https://www.gitignore.io/?templates=c++,clion,platformio

@@ -22,12 +22,12 @@ class Handler : public Activatable {
   typedef enum Status {
     e_handler_idle = -1,
     e_handler_data_handled,
+    e_handler_data_handling, // For async
     e_handler_error,
   } Status;
 
   /**
    * Construct a handler
-   * @param handler_id: unique id of the handler
    */
   explicit Handler();
   virtual ~Handler() = default;
@@ -41,12 +41,36 @@ class Handler : public Activatable {
  protected:
   /**
    * Handle the data produced by workers
-   * @param worker_reports: All the data from the workers
+   * @param workers: All the data from the workers
    * @return status code (HandlerStatus::StatusCode or any custom)
    */
   virtual int8_t handle_produced_work(const WorkerMap& workers) = 0;
 
+  /**
+   * Handle data async, prepare your data internally in the handler
+   * @return status code (HandlerStatus::StatusCode or any custom)
+   */
+  virtual int8_t handle_async();
+
   int8_t status;
+  int8_t async_result_status;
+
+ protected:
+  /**
+   * Start task running async to perform the data handling (prepare data beforehand in handler instance)
+   * @param task_name
+   * @param core
+   * @param priority
+   * @return
+   */
+  int8_t start_task(const char* task_name, uint8_t core=0, uint8_t priority=5);
+
+  /**
+   * Kill a running task
+   */
+  void kill_task();
+
+  virtual bool task_running() const;
 
  private:
 
@@ -57,8 +81,12 @@ class Handler : public Activatable {
    */
   virtual void try_handle_work(const WorkerMap& workers) final;
 
+  static void run_task(void* instance);
+  TaskHandle_t xAsyncHandlerHandle;
+
   friend Aggregator;
 };
+
 
 class HandlerMap : public std::map<uint8_t, Handler*> {
  public:
