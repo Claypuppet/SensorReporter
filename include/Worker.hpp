@@ -25,11 +25,16 @@ typedef WorkerMap worker_map_t;
 class BaseWorker : public Activatable {
  public:
 
-  /// Enum can be replaced with custom implementation, or use custom enum starting at `= 1`
+  /**
+   * Enum can be replaced with custom implementation
+   * async running and idle states are used by the worker itself (at -2 and -1 respectively)
+   * Data read = 0, considered fresh produced data to be handled
+   * Anything above 0 can be used for custom errors
+   */
   typedef enum Status {
+    e_worker_processing = -2, // For async
     e_worker_idle = -1,
-    e_worker_data_read,
-    e_worker_data_working, // For async
+    e_worker_data_read = 0,
     e_worker_error,
   } Status;
 

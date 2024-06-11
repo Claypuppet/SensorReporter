@@ -52,7 +52,7 @@ void Aggregator::run() {
   // Handlers handle produced work
   for(const auto& r : handlers) {
     auto handler = r.second;
-    if(handler && (any_new || handler->get_status() == Handler::e_handler_data_handling)) {
+    if(handler && (any_new || handler->get_status() == Handler::e_handler_processing)) {
       handler->try_handle_work(workers);
     }
   }

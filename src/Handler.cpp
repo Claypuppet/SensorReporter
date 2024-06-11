@@ -18,10 +18,12 @@ void Handler::try_handle_work(const WorkerMap& workers) {
   }
   if(active()) {
     if (!task_running()) {
-      if (status == e_handler_data_handling) {
+      if (status == e_handler_processing) {
+        // Task completed async, set status based on result
         status = async_result_status;
         async_result_status = e_handler_idle;
       } else {
+        // handle data normally
         status = handle_produced_work(workers);
       }
     }
@@ -34,10 +36,10 @@ int8_t Handler::handle_async() {
 
 int8_t Handler::start_task(const char* task_name, uint32_t memory, uint8_t priority, uint8_t core) {
   if (xAsyncHandlerHandle != nullptr) {
-    return e_handler_data_handling; // already handling
+    return e_handler_processing; // already handling
   }
   xTaskCreatePinnedToCore(Handler::run_task, task_name, memory, this, priority, &xAsyncHandlerHandle, core);
-  return e_handler_data_handling;
+  return e_handler_processing;
 }
 
 void Handler::kill_task() {

@@ -33,7 +33,7 @@ bool BaseWorker::work(const worker_map_t& workers) {
     if (task_running()) {
       // Task running async, skip working
       return false;
-    } else if (status == e_worker_data_working) {
+    } else if (status == e_worker_processing) {
       // Task completed async, prepare data to be used in system
       status = async_result_status;
       async_result_status = e_worker_idle;
@@ -58,10 +58,10 @@ bool BaseWorker::work(const worker_map_t& workers) {
 
 int8_t BaseWorker::start_task(const char* task_name, uint32_t memory, uint8_t priority, uint8_t core) {
   if (xAsyncWorkerHandle != nullptr) {
-    return e_worker_data_working; // Already working
+    return e_worker_processing; // Already working
   }
   xTaskCreatePinnedToCore(BaseWorker::run_task, task_name, memory, this, priority, &xAsyncWorkerHandle, core);
-  return e_worker_data_working;
+  return e_worker_processing;
 }
 
 void BaseWorker::kill_task() {

@@ -18,11 +18,16 @@ class Aggregator;
 class Handler : public Activatable {
  public:
 
-  /// Enum can be replaced with custom implementation, or use custom enum starting at `= 1`
+  /**
+   * Enum can be replaced with custom implementation
+   * async running and idle states are used by the handler itself (at -2 and -1 respectively)
+   * Data handled = 0, considered success
+   * Anything above 0 can be used for custom errors
+   */
   typedef enum Status {
+    e_handler_processing = -2, // For async
     e_handler_idle = -1,
-    e_handler_data_handled,
-    e_handler_data_handling, // For async
+    e_handler_data_handled = 0,
     e_handler_error,
   } Status;
 
